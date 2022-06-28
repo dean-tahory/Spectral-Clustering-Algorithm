@@ -226,7 +226,12 @@ void rotation_prod(double **M, int i, int j, double c, double s, int dim)
         M[k][i] = k_i, M[k][j] = k_j;
     }
 }
-
+// sum the second vector v into u
+void points_sum(double *u, double const *v, int length)
+{
+    for (int i = 0; i < length; i++)
+        u[i] += v[i];
+}
 /* Main Methods */
 double **wam(double **points, int points_number, int point_dim)
 {
@@ -391,7 +396,82 @@ double **jacobi(double **A, int dim)
 
     return V;
 }
+double **k_means(int const K, int const max_iter, double **points, double **centroids, int const points_length, int const point_length, double eps)
+{
+    int k;
+    int i;
+    int j;
+    int l;
+    int all_diffs_are_small;
+    int *points_to_centroids;
+    int *diff_small;
+    int new_centroids_index;
+    double *avg_centroid;
+    double counter;
 
+    points_to_centroids = calloc(points_length, sizeof(int));
+    diff_small = calloc(K, sizeof(int));
+    for (i = 0; i < K; i++)
+    {
+        diff_small[i] = 1;
+    }
+
+    for (l = 0; l < max_iter; l++)
+    {
+        for (i = 0; i < points_length; i++)
+        {
+            new_centroids_index = points_to_centroids[i];
+            for (j = 0; j < K; j++)
+            {
+                if (norm(points[i], centroids[j], point_length) < norm(points[i], centroids[new_centroids_index], point_length))
+                {
+                    new_centroids_index = j;
+                }
+            }
+            points_to_centroids[i] = new_centroids_index;
+        }
+
+        for (i = 0; i < K; i++)
+        {
+            diff_small[i] = 0;
+            avg_centroid = calloc(point_length, sizeof(double));
+            counter = 0;
+            for (j = 0; j < points_length; j++)
+            {
+                if (points_to_centroids[j] == i)
+                {
+                    points_sum(avg_centroid, points[j], point_length);
+                    counter++;
+                }
+            }
+
+            if (counter > 0)
+            {
+                for (k = 0; k < point_length; k++)
+                    avg_centroid[k] = avg_centroid[k] / counter;
+
+                if (norm(centroids[i], avg_centroid, point_length) < 0.001)
+                {
+                    diff_small[i] = 1;
+                }
+                free(centroids[i]);
+                centroids[i] = avg_centroid;
+            }
+        }
+        all_diffs_are_small = 0;
+        for (k = 0; k < K; k++)
+        {
+            all_diffs_are_small += diff_small[k];
+        }
+        if (all_diffs_are_small == K)
+        {
+            break;
+        }
+    }
+    free(points_to_centroids);
+    free(diff_small);
+    return centroids;
+}
 // testing methods
 void test_get_column_of_matrix()
 {
