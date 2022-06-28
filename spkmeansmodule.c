@@ -94,18 +94,40 @@ static PyObject *fit(PyObject *self, PyObject *args)
     }
 
 static PyMethodDef _methods[] = {
-    FUNC(METH_VARARGS, spk, "Spectral-Clustering-Algorithm"),
+    FUNC(METH_VARARGS, fit, "K-means-algorithm"),
+    FUNC(METH_VARARGS, wam, "Calculate weighted adjacency matrix"),
+    FUNC(METH_VARARGS, ddg, "Calculate diagonal degree matrix"),
+    FUNC(METH_VARARGS, lnorm, "Calculate normalized graph laplacian"),
+    FUNC(METH_VARARGS, jacobi, "Calculate eiganvalues and eiganvectores"),
     {NULL, NULL, 0, NULL} /* sentinel */
 };
 
 static struct PyModuleDef _moduledef = {
     PyModuleDef_HEAD_INIT,
-    "mykmeanssp",
+    "spkmeans",
     NULL,
     -1,
     _methods};
 
-PyMODINIT_FUNC PyInit_mykmeanssp(void)
+PyMODINIT_FUNC PyInit_spkmeans(void)
 {
     return PyModule_Create(&_moduledef);
 }
+
+// static PyMethodDef _methods[] = {
+//     FUNC(METH_VARARGS, fit, "K-means-algorithm"),
+//     {NULL, NULL, 0, NULL} /* sint ientinel */
+// };
+
+// static struct PyModuleDef _moduledef = {
+//     PyModuleDef_HEAD_INIT,
+//     "mykmeanssp",
+//     NULL,
+//     -1,
+//     _methods};
+
+// PyMODINIT_FUNC
+// PyInit_mykmeanssp(void)
+// {
+//     return PyModule_Create(&_moduledef);
+// }

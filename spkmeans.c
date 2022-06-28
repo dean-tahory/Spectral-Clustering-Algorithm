@@ -114,7 +114,6 @@ int *find_max_element_off_diagonal(double **matrix, int dim)
         return NULL;
     // max_element is always positive
     double max_element = fabs(matrix[0][dim - 1]);
-    int *max_index = calloc(2, sizeof(int));
     int max_i = 0, max_j = dim - 1;
     for (int i = 0; i < dim; i++)
     {
@@ -232,6 +231,18 @@ void points_sum(double *u, double const *v, int length)
     for (int i = 0; i < length; i++)
         u[i] += v[i];
 }
+/**
+ * @brief free memory of 2d array
+ *
+ * @param arr
+ * @param length number of rows
+ */
+void free_2d(double **arr, int length)
+{
+    for (int i = 0; i < length; i++)
+        free(arr[i]);
+    free(arr);
+}
 /* Main Methods */
 double **wam(double **points, int points_number, int point_dim)
 {
@@ -310,15 +321,25 @@ double **jacobi(double **A, int dim)
         V[l] = calloc(dim, sizeof(double));
         V[l][l] = 1;
     }
+    // copying A to work with
+    double **curr_A = calloc(dim, sizeof(double *));
+    for (int l = 0; l < dim; l++)
+    {
+        curr_A[l] = calloc(dim, sizeof(double *));
+        for (int k = 0; k < dim; k++)
+        {
+            curr_A[l][k] = A[l][k];
+        }
+    }
 
     for (int k = 0; k < 100; k++)
     {
         // step 1: find the indexes of the max (absolue) element
-        int *indexes = find_max_element_off_diagonal(A, dim);
+        int *indexes = find_max_element_off_diagonal(curr_A, dim);
         i = indexes[0], j = indexes[1];
 
         // step 2: calculate theta -> t -> c -> s
-        theta = (A[j][j] - A[i][i]) / (2 * A[i][j]);
+        theta = (curr_A[j][j] - curr_A[i][i]) / (2 * curr_A[i][j]);
         t = sign(theta) / (fabs(theta) + sqrt(pow(theta, 2) + 1));
         c = 1 / (sqrt(pow(t, 2) + 1));
         s = t * c;
@@ -358,7 +379,7 @@ double **jacobi(double **A, int dim)
             next_A[a] = calloc(dim, sizeof(double));
             for (int b = 0; b < dim; b++)
             {
-                next_A[a][b] = A[a][b];
+                next_A[a][b] = curr_A[a][b];
             }
         }
 
@@ -366,23 +387,23 @@ double **jacobi(double **A, int dim)
         {
             if (r != i && r != j)
             {
-                next_A[r][i] = next_A[i][r] = c * A[r][i] - s * A[r][j];
+                next_A[r][i] = next_A[i][r] = c * curr_A[r][i] - s * curr_A[r][j];
 
-                next_A[r][j] = next_A[j][r] = c * A[r][j] + s * A[r][i];
+                next_A[r][j] = next_A[j][r] = c * curr_A[r][j] + s * curr_A[r][i];
             }
         }
-        next_A[i][i] = pow(c, 2) * A[i][i] + pow(s, 2) * A[j][j] - 2 * s * c * A[i][j];
-        next_A[j][j] = pow(s, 2) * A[i][i] + pow(c, 2) * A[j][j] + 2 * s * c * A[i][j];
+        next_A[i][i] = pow(c, 2) * curr_A[i][i] + pow(s, 2) * curr_A[j][j] - 2 * s * c * curr_A[i][j];
+        next_A[j][j] = pow(s, 2) * curr_A[i][i] + pow(c, 2) * curr_A[j][j] + 2 * s * c * curr_A[i][j];
         next_A[i][j] = next_A[j][i] = 0;
 
         // step 5: check if we reach the required convergence - 1*10^-5
-        if (off(A, dim) - off(next_A, dim) <= pow(10, -5))
+        if (off(curr_A, dim) - off(next_A, dim) <= pow(10, -5))
         {
             break;
         }
         // step 6: free memory of A and updating A to be next_A
-        free(A);
-        A = next_A;
+        free(curr_A);
+        curr_A = next_A;
     }
 
     // step 7: print the eiganvalues
@@ -701,15 +722,32 @@ int main(int argc, char **argv)
 
     if (!strcmp(input_goal, goal[0]))
     {
-        print_2d_arr(wam(points, points_number, point_dim), points_number);
+        double **matrix = wam(points, points_number, point_dim);
+        print_2d_arr(matrix, points_number);
+        free_2d(matrix, points_number);
     }
-    if (!strcmp(input_goal, goal[1]))
+    else if (!strcmp(input_goal, goal[1]))
     {
-        print_2d_arr(ddg(points, points_number, point_dim), points_number);
+        double **matrix = ddg(points, points_number, point_dim);
+        print_2d_arr(matrix, points_number);
+        free_2d(matrix, points_number);
+    }
+    else if (!strcmp(input_goal, goal[2]))
+    {
+        double **matrix = lnorm(points, points_number, point_dim);
+        print_2d_arr(matrix, points_number);
+        free_2d(matrix, points_number);
+    }
+    else if (!strcmp(input_goal, goal[3]))
+    {
+        // we assume the input is a symmetric matrix
+        double **matrix = jacobi(points, points_number);
+        print_2d_arr(matrix, points_number);
+        free_2d(matrix, points_number);
     }
 
     // TODO remove 'test' label case
-    if (!strcmp(input_goal, goal[4]))
+    else if (!strcmp(input_goal, goal[4]))
     {
         test();
     }
@@ -721,9 +759,7 @@ int main(int argc, char **argv)
     // for (int i = 0; i < K; i++)
     //     free(centroids[i]);
     // free(centroids);
-    for (int i = 0; i < points_number; i++)
-        free(points[i]);
-    free(points);
+    free_2d(points, points_number);
 
     return 0;
 }
