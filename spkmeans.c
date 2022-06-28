@@ -337,20 +337,20 @@ double **jacobi(double **A, int dim)
         else
         {
             /* using matrix product */
-            double **P = calloc(dim, sizeof(double *));
-            for (int l = 0; l < dim; l++)
-            {
-                P[l] = calloc(dim, sizeof(double));
-                P[l][l] = 1;
-            }
-            P[i][i] = P[j][j] = c;
-            if (j < i)
-                P[j][i] = s, P[i][j] = -s;
-            else
-                P[i][j] = s, P[j][i] = -s;
-            V = matrix_prod(V, P, dim);
+            // double **P = calloc(dim, sizeof(double *));
+            // for (int l = 0; l < dim; l++)
+            // {
+            //     P[l] = calloc(dim, sizeof(double));
+            //     P[l][l] = 1;
+            // }
+            // P[i][i] = P[j][j] = c;
+            // if (j < i)
+            //     P[j][i] = s, P[i][j] = -s;
+            // else
+            //     P[i][j] = s, P[j][i] = -s;
+            // V = matrix_prod(V, P, dim);
 
-            // rotation_prod(V, i, j, c, s, dim);
+            rotation_prod(V, i, j, c, s, dim);
 
             // for (int r = 0; r < dim; r++)
             // {
