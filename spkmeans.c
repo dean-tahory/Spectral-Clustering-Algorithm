@@ -113,12 +113,12 @@ int *find_max_element_off_diagonal(double **matrix, int dim)
     if (dim == 1)
         return NULL;
     // max_element is always positive
-    double max_element = fabs(matrix[dim - 1][0]);
+    double max_element = fabs(matrix[0][dim - 1]);
     int *max_index = calloc(2, sizeof(int));
-    int max_i = dim - 1, max_j = 0;
+    int max_i = 0, max_j = dim - 1;
     for (int i = 0; i < dim; i++)
     {
-        for (int j = 0; j < dim; j++)
+        for (int j = i; j < dim; j++)
         {
             if (i != j)
             {
@@ -318,12 +318,7 @@ double **jacobi(double **A, int dim)
         c = 1 / (sqrt(pow(t, 2) + 1));
         s = t * c;
 
-        // [ ] I stop here - the product is ok but idk why it's not the right answer. maybe it because:
-        // the values of i and j are worng / the values of c and s are wrong /
-
         // step 3: calculating V = product of matrix rotations
-        // TODO delet that row
-        printf("c: %.4lf\ts: %.4lf\ti: %d\tj: %d\n", c, s, i, j);
         if (k == 0)
         {
             V[i][i] = V[j][j] = c;
@@ -331,8 +326,6 @@ double **jacobi(double **A, int dim)
                 V[j][i] = s, V[i][j] = -s;
             else
                 V[i][j] = s, V[j][i] = -s;
-            print_2d_arr(V, dim);
-            printf("\n");
         }
         else
         {
@@ -351,23 +344,9 @@ double **jacobi(double **A, int dim)
             // V = matrix_prod(V, P, dim);
 
             rotation_prod(V, i, j, c, s, dim);
-
-            // for (int r = 0; r < dim; r++)
-            // {
-            //     if (r != i && r != j)
-            //     {
-            //         V[r][i] = V[i][r] = c * V[r][i] - s * V[r][j];
-            //         // V[r][i] = c * V[r][i] - s * V[r][j];
-            //         printf("\n%.4f\n", V[r][i]);
-            //         V[r][j] = V[j][r] = c * V[r][j] + s * V[r][i];
-            //         // V[r][j] = c * V[r][j] + s * V[r][i];
-            //     }
-            // }
-            print_2d_arr(V, dim);
-            printf("\n");
         }
 
-        // setp 3: calculating A': copying A to A' -> updating row i and column j only
+        // setp 4: calculating A': copying A to A' -> updating row i and column j only
         next_A = calloc(dim, sizeof(double *));
         for (int a = 0; a < dim; a++)
         {
@@ -391,16 +370,17 @@ double **jacobi(double **A, int dim)
         next_A[j][j] = pow(s, 2) * A[i][i] + pow(c, 2) * A[j][j] + 2 * s * c * A[i][j];
         next_A[i][j] = next_A[j][i] = 0;
 
-        // step 4: check if we reach the required convergence - 1*10^-5
+        // step 5: check if we reach the required convergence - 1*10^-5
         if (off(A, dim) - off(next_A, dim) <= pow(10, -5))
         {
             break;
         }
-        // step 5: free memory of A and updating A to be next_A
+        // step 6: free memory of A and updating A to be next_A
         free(A);
         A = next_A;
     }
 
+    // step 7: print the eiganvalues
     for (int l = 0; l < dim; l++)
     {
         if (l == dim - 1)
@@ -413,7 +393,6 @@ double **jacobi(double **A, int dim)
 }
 
 // testing methods
-
 void test_get_column_of_matrix()
 {
     double my_mat[3][3] = {
@@ -435,7 +414,6 @@ void test_get_column_of_matrix()
 void test_dot_prod()
 {
 }
-
 void test_matrix_prod()
 {
     double my_A[3][3] = {
@@ -503,7 +481,7 @@ void test_off()
 }
 void test_jacobi()
 {
-    // usefull link to test - https://tiffzhang.com/jacobi/
+    // usefull link to test - https://tiffzhang.com/jacobi/ + http://www.math.utoledo.edu/~codenth/Linear_Algebra/Calculators/jacobi_algorithm.html
     double my_A[3][3] = {
         {1, 2, 3},
         {2, 4, 6},
