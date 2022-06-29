@@ -3,3 +3,4 @@ build
 spkmeans
 spkmeans.cpython-39-darwin.so
 input.txt
+spkmeans.dSYM
