@@ -174,13 +174,28 @@ double off(double **A, int dim)
  * @param arr 2d array
  * @param dim
  */
-void print_2d_arr(double **arr, int dim)
+void print_squared_2d_arr(double **arr, int dim)
 {
     for (int i = 0; i < dim; i++)
     {
         for (int j = 0; j < dim; j++)
         {
             if (j == (dim - 1))
+                printf("%.4lf", arr[i][j]);
+            else
+                printf("%.4lf,", arr[i][j]);
+        }
+        printf("\n");
+    }
+}
+
+void print_2d_arr(double **arr, int rows_number, int columns_number)
+{
+    for (int i = 0; i < rows_number; i++)
+    {
+        for (int j = 0; j < columns_number; j++)
+        {
+            if (j == (columns_number - 1))
                 printf("%.4lf", arr[i][j]);
             else
                 printf("%.4lf,", arr[i][j]);
@@ -244,38 +259,38 @@ void free_2d(double **arr, int length)
     free(arr);
 }
 /* Main Methods */
-double **wam(double **points, int points_number, int point_dim)
+double **wam(double **points, int dim)
 {
-    double **W_matrix = calloc(points_number, sizeof(double *));
-    for (int i = 0; i < points_number; i++)
+    double **W_matrix = calloc(dim, sizeof(double *));
+    for (int i = 0; i < dim; i++)
     {
-        W_matrix[i] = calloc(points_number, sizeof(double));
-        for (int j = 0; j < points_number; j++)
+        W_matrix[i] = calloc(dim, sizeof(double));
+        for (int j = 0; j < dim; j++)
         {
             if (i == j)
                 W_matrix[i][j] = 0;
             else
-                W_matrix[i][j] = exp(-0.5 * norm(points[i], points[j], point_dim));
+                W_matrix[i][j] = exp(-0.5 * norm(points[i], points[j], dim));
         }
     }
 
     return W_matrix;
 }
-double **ddg(double **points, int points_number, int point_dim)
+double **ddg(double **points, int dim)
 {
-    double **W_matrix = wam(points, points_number, point_dim);
-    double **D_matrix = calloc(points_number, sizeof(double *));
-    for (int i = 0; i < points_number; i++)
+    double **W_matrix = wam(points, dim);
+    double **D_matrix = calloc(dim, sizeof(double *));
+    for (int i = 0; i < dim; i++)
     {
-        D_matrix[i] = calloc(points_number, sizeof(double));
-        for (int j = 0; j < points_number; j++)
+        D_matrix[i] = calloc(dim, sizeof(double));
+        for (int j = 0; j < dim; j++)
         {
             if (i != j)
                 D_matrix[i][j] = 0;
             else
             {
                 // summing the i's row of W_matrix
-                for (int k = 0; k < points_number; k++)
+                for (int k = 0; k < dim; k++)
                 {
                     D_matrix[i][j] += W_matrix[i][k];
                 }
@@ -286,15 +301,15 @@ double **ddg(double **points, int points_number, int point_dim)
     free(W_matrix);
     return D_matrix;
 }
-double **lnorm(double **points, int points_number, int point_dim)
+double **lnorm(double **points, int dim)
 {
-    double **W_matrix = wam(points, points_number, point_dim);
-    double **D_matrix = ddg(points, points_number, point_dim);
-    double **lnorm_matrix = calloc(points_number, sizeof(double *));
-    for (int i = 0; i < points_number; i++)
+    double **W_matrix = wam(points, dim);
+    double **D_matrix = ddg(points, dim);
+    double **lnorm_matrix = calloc(dim, sizeof(double *));
+    for (int i = 0; i < dim; i++)
     {
-        lnorm_matrix[i] = calloc(points_number, sizeof(double));
-        for (int j = 0; j < points_number; j++)
+        lnorm_matrix[i] = calloc(dim, sizeof(double));
+        for (int j = 0; j < dim; j++)
         {
             if (i == j)
             {
@@ -406,16 +421,20 @@ double **jacobi(double **A, int dim)
         curr_A = next_A;
     }
 
-    // step 7: print the eiganvalues
-    for (int l = 0; l < dim; l++)
+    // step 7: rerturn new matrix where its first row are the eiganvalues and the rest is matrix V
+    double **new_V = calloc(dim + 1, sizeof(double *));
+    for (int i = 0; i < dim + 1; i++)
     {
-        if (l == dim - 1)
-            printf("%.4lf\n", next_A[l][l]);
-        else
-            printf("%.4lf,", next_A[l][l]);
-    }
+        new_V[i] = calloc(dim, sizeof(double));
 
-    return V;
+        for (int j = 0; j < dim && i > 0; j++)
+        {
+            new_V[0][j] = next_A[j][j];
+            new_V[i][j] = V[i - 1][j];
+        }
+    }
+    free_2d(V, dim);
+    return new_V;
 }
 double **k_means(int const K, int const max_iter, double **points, double **centroids, int const points_length, int const point_length, double eps)
 {
@@ -543,7 +562,7 @@ void test_matrix_prod()
             B[i][j] = my_B[i][j];
         }
     }
-    print_2d_arr(matrix_prod(A, B, 3), 3);
+    print_squared_2d_arr(matrix_prod(A, B, 3), 3);
 }
 void test_find_max_element_off_diagonal()
 {
@@ -596,7 +615,7 @@ void test_jacobi()
             A[i][j] = my_A[i][j];
         }
     }
-    print_2d_arr(jacobi(A, 3), 3);
+    print_2d_arr(jacobi(A, 3), 4, 3);
 }
 void test_rotation_prod()
 {
@@ -656,7 +675,7 @@ void test_rotation_prod()
         }
     }
     rotation_prod(A, 1, 2, 0.8112, 0.5847, 3);
-    print_2d_arr(A, 3);
+    print_squared_2d_arr(A, 3);
 }
 
 void test()
@@ -722,27 +741,28 @@ int main(int argc, char **argv)
 
     if (!strcmp(input_goal, goal[0]))
     {
-        double **matrix = wam(points, points_number, point_dim);
-        print_2d_arr(matrix, points_number);
+        double **matrix = wam(points, points_number);
+        print_squared_2d_arr(matrix, points_number);
         free_2d(matrix, points_number);
     }
     else if (!strcmp(input_goal, goal[1]))
     {
-        double **matrix = ddg(points, points_number, point_dim);
-        print_2d_arr(matrix, points_number);
+        double **matrix = ddg(points, points_number);
+        print_squared_2d_arr(matrix, points_number);
         free_2d(matrix, points_number);
     }
     else if (!strcmp(input_goal, goal[2]))
     {
-        double **matrix = lnorm(points, points_number, point_dim);
-        print_2d_arr(matrix, points_number);
+        double **matrix = lnorm(points, points_number);
+        print_squared_2d_arr(matrix, points_number);
         free_2d(matrix, points_number);
     }
     else if (!strcmp(input_goal, goal[3]))
     {
         // we assume the input is a symmetric matrix
         double **matrix = jacobi(points, points_number);
-        print_2d_arr(matrix, points_number);
+
+        print_2d_arr(matrix, points_number + 1, points_number);
         free_2d(matrix, points_number);
     }
 

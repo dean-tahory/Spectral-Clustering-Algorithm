@@ -45,7 +45,7 @@ static double **python_2d_array_to_c(PyObject *_list)
 }
 
 // our main module API method - getting args from python object, converting them to C objects and work on them.
-static PyObject *fit(PyObject *self, PyObject *args)
+static PyObject *kmeans_fit(PyObject *self, PyObject *args)
 {
     int K, max_iter, points_length, point_length, i;
     double eps;
@@ -85,6 +85,150 @@ static PyObject *fit(PyObject *self, PyObject *args)
     return new_centroids;
 }
 
+static PyObject *wam_fit(PyObject *self, PyObject *args)
+{
+    int dim, i;
+    PyObject *points_list;
+
+    // binding the variables we declared to the args we get from the python module.
+    if (!PyArg_ParseTuple(args, "Oi:wam_fit", &points_list, &dim))
+    {
+        return NULL;
+    }
+
+    double **points = python_2d_array_to_c(points_list);
+    double **matrix = wam(points, dim);
+
+    // converting C 2d array to Python list of lists.
+    PyObject *py_matrix = PyList_New(0);
+    if (py_matrix == NULL)
+        other_error();
+
+    for (i = 0; i < dim; i++)
+    {
+        PyObject *row_i = PyList_New(0);
+        if (row_i == NULL)
+            other_error();
+        Py_ssize_t j;
+        for (j = 0; j < dim; j++)
+        {
+            PyObject *float_point = PyFloat_FromDouble(matrix[i][j]);
+            PyList_Append(row_i, float_point);
+        }
+        if (PyList_Append(py_matrix, row_i) == -1)
+            other_error();
+    }
+    return py_matrix;
+}
+
+static PyObject *ddg_fit(PyObject *self, PyObject *args)
+{
+    int dim, i;
+    PyObject *points_list;
+
+    // binding the variables we declared to the args we get from the python module.
+    if (!PyArg_ParseTuple(args, "Oi:ddg_fit", &points_list, &dim))
+    {
+        return NULL;
+    }
+
+    double **points = python_2d_array_to_c(points_list);
+    double **matrix = ddg(points, dim);
+
+    // converting C 2d array to Python list of lists.
+    PyObject *py_matrix = PyList_New(0);
+    if (py_matrix == NULL)
+        other_error();
+
+    for (i = 0; i < dim; i++)
+    {
+        PyObject *row_i = PyList_New(0);
+        if (row_i == NULL)
+            other_error();
+        Py_ssize_t j;
+        for (j = 0; j < dim; j++)
+        {
+            PyObject *float_point = PyFloat_FromDouble(matrix[i][j]);
+            PyList_Append(row_i, float_point);
+        }
+        if (PyList_Append(py_matrix, row_i) == -1)
+            other_error();
+    }
+    return py_matrix;
+}
+
+static PyObject *lnorm_fit(PyObject *self, PyObject *args)
+{
+    int dim, i;
+    PyObject *points_list;
+
+    // binding the variables we declared to the args we get from the python module.
+    if (!PyArg_ParseTuple(args, "Oi:lnorm_fit", &points_list, &dim))
+    {
+        return NULL;
+    }
+
+    double **points = python_2d_array_to_c(points_list);
+    double **matrix = lnorm(points, dim);
+
+    // converting C 2d array to Python list of lists.
+    PyObject *py_matrix = PyList_New(0);
+    if (py_matrix == NULL)
+        other_error();
+
+    for (i = 0; i < dim; i++)
+    {
+        PyObject *row_i = PyList_New(0);
+        if (row_i == NULL)
+            other_error();
+        Py_ssize_t j;
+        for (j = 0; j < dim; j++)
+        {
+            PyObject *float_point = PyFloat_FromDouble(matrix[i][j]);
+            PyList_Append(row_i, float_point);
+        }
+        if (PyList_Append(py_matrix, row_i) == -1)
+            other_error();
+    }
+    return py_matrix;
+}
+
+static PyObject *jacobi_fit(PyObject *self, PyObject *args)
+{
+    int dim, i;
+    PyObject *points_list;
+
+    // binding the variables we declared to the args we get from the python module.
+    if (!PyArg_ParseTuple(args, "Oi:jacobi_fit", &points_list, &dim))
+    {
+        return NULL;
+    }
+
+    double **points = python_2d_array_to_c(points_list);
+    double **matrix = jacobi(points, dim);
+
+    // converting C 2d array to Python list of lists.
+    PyObject *py_matrix = PyList_New(0);
+    if (py_matrix == NULL)
+        other_error();
+
+    for (i = 0; i < dim + 1; i++)
+    {
+        PyObject *row_i = PyList_New(0);
+        if (row_i == NULL)
+            other_error();
+        Py_ssize_t j;
+        for (j = 0; j < dim; j++)
+        {
+            PyObject *float_point = PyFloat_FromDouble(matrix[i][j]);
+            PyList_Append(row_i, float_point);
+        }
+        if (PyList_Append(py_matrix, row_i) == -1)
+            other_error();
+    }
+    return py_matrix;
+}
+
 /*
  * A macro to help us with defining the methods
  */
@@ -94,11 +238,11 @@ static PyObject *fit(PyObject *self, PyObject *args)
     }
 
 static PyMethodDef _methods[] = {
-    FUNC(METH_VARARGS, fit, "K-means-algorithm"),
-    FUNC(METH_VARARGS, wam, "Calculate weighted adjacency matrix"),
-    FUNC(METH_VARARGS, ddg, "Calculate diagonal degree matrix"),
-    FUNC(METH_VARARGS, lnorm, "Calculate normalized graph laplacian"),
-    FUNC(METH_VARARGS, jacobi, "Calculate eiganvalues and eiganvectores"),
+    FUNC(METH_VARARGS, kmeans_fit, "K-means-algorithm"),
+    FUNC(METH_VARARGS, wam_fit, "Calculate weighted adjacency matrix"),
+    FUNC(METH_VARARGS, ddg_fit, "Calculate diagonal degree matrix"),
+    FUNC(METH_VARARGS, lnorm_fit, "Calculate normalized graph laplacian"),
+    FUNC(METH_VARARGS, jacobi_fit, "Calculate eiganvalues and eiganvectores"),
     {NULL, NULL, 0, NULL} /* sentinel */
 };
 

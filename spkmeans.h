@@ -8,7 +8,7 @@
  * @param point_dim dimension of point
  * @return 2d array
  */
-double **wam(double **points, int points_number, int point_dim);
+double **wam(double **points, int dim);
 
 /**
  * @brief calculating the diagonal degree matrix
@@ -18,7 +18,7 @@ double **wam(double **points, int points_number, int point_dim);
  * @param point_dim dimension of point
  * @return 2d array
  */
-double **ddg(double **points, int points_number, int point_dim);
+double **ddg(double **points, int dim);
 
 /**
  * @brief calculating the normalized graph laplacian
@@ -28,7 +28,7 @@ double **ddg(double **points, int points_number, int point_dim);
  * @param point_dim dimension of point
  * @return 2d array
  */
-double **lnorm(double **points, int points_number, int point_dim);
+double **lnorm(double **points, int dim);
 
 /**
  * @brief return centroids acording to spectral clustering algorithm as array of double arrays which represent the points.
@@ -39,3 +39,12 @@ double **lnorm(double **points, int points_number, int point_dim);
  * @return list of centroids points (2d array)
  */
 double **spk(int const K, double **points, double **centroids);
+/**
+ * @brief
+ *
+ * @param A
+ * @param dim
+ * @return double** 2d array where the first row is the eiganvalues and the rest is matrix V which its columns are eiganvectors of A.
+ *         more precisely, the column below eignvalue at the first row is its eiganvector
+ */
+double **jacobi(double **A, int dim);
