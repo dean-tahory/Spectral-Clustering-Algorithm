@@ -1,6 +1,4 @@
 
-from audioop import reverse
-from os import umask
 import sys
 import math
 import spkmeans as spkmeans
