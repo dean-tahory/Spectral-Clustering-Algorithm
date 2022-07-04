@@ -1,4 +1,4 @@
-
+// TODO check if it's required to add all functions declarations from spkmeans.c to here
 
 /**
  * @brief calculating the weighted adjacency matrix
