@@ -138,13 +138,13 @@ if(input_goal == "spk"):
     spk(points.tolist(), points.shape[0], K)
 elif(input_goal == "wam"):
     print_2d_list(spkmeans.wam_fit(points.tolist(),
-                                   points.shape[0], points.shape[1]))
+                                   points.shape[0]))
 elif(input_goal == "ddg"):
     print_2d_list(spkmeans.ddg_fit(points.tolist(),
-                  points.shape[0], points.shape[1]))
+                  points.shape[0]))
 elif(input_goal == "lnorm"):
     print_2d_list(spkmeans.lnorm_fit(points.tolist(),
-                  points.shape[0], points.shape[1]))
+                  points.shape[0]))
 elif(input_goal == "jacobi"):
     print_2d_list(spkmeans.jacobi_fit(points.tolist(), points.shape[0]))
 else:
