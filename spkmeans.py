@@ -78,7 +78,7 @@ def k_means_pp(points, K):
             P_values[l] = D_values[l]/sum(D_values)
         centroids_indexes[i] = np.random.choice(len(points), p=P_values)
         centroids[i] = points[centroids_indexes[i]]
-    print(' '.join([f'{c}' for c in centroids_indexes]))
+    print(','.join([f'{c}' for c in centroids_indexes]))
     return centroids
 
 
