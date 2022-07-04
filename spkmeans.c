@@ -490,7 +490,7 @@ double **k_means(int const K, int const max_iter, double **points, double **cent
                 for (k = 0; k < point_length; k++)
                     avg_centroid[k] = avg_centroid[k] / counter;
 
-                if (norm(centroids[i], avg_centroid, point_length) < 0.001)
+                if (norm(centroids[i], avg_centroid, point_length) < eps)
                 {
                     diff_small[i] = 1;
                 }
