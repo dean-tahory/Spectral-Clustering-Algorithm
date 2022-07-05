@@ -125,13 +125,11 @@ def spk(points: list[float], dim: float, K: int):
         V_matrix[i] = U_matrix[i]/norm_vector[i]
     # print('\n')
     # print_2d_list(V_matrix.tolist())
-    centroids = spkmeans.kmeans_fit(K, max_iter, V_matrix.tolist(), k_means_pp(
-        V_matrix, K).tolist(), V_matrix.shape[0], V_matrix.shape[1], eps)
+    centroids = spkmeans.kmeans_fit(K, max_iter, V_matrix.tolist(), k_means_pp(V_matrix, K).tolist(), V_matrix.shape[0], V_matrix.shape[1], eps)
     for c in centroids:
         for i in range(len(c)):
             c[i] = f'{c[i]:.4f}'
         print(','.join(c))
-
 
     # main methods
 if(input_goal == "spk"):
