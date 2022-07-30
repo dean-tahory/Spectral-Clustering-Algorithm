@@ -7,7 +7,7 @@ import pandas as pd
 
 import sys
 sys.path.append("../Spectral-Clustering-Algorithm/src")
-
+# will use spka.spk to test spk
 import spkmeans as spka
 import spkmeans_module as spkm
 

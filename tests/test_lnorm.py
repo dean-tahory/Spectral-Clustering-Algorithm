@@ -13,10 +13,10 @@ def format_arr_to_4digits(arr):
     return arr
 
 
-test_data = load_test_data("wam")
+test_data = load_test_data("lnorm")
 
 
 @pytest.mark.parametrize("input,correct_output", test_data)
-def test_wam(input, correct_output):
-    output = format_arr_to_4digits(spkm.wam_fit(input))
+def test_lnorm(input, correct_output):
+    output = format_arr_to_4digits(spkm.lnorm_fit(input))
     assert (output == correct_output)

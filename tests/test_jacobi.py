@@ -13,10 +13,11 @@ def format_arr_to_4digits(arr):
     return arr
 
 
-test_data = load_test_data("wam")
+test_data = load_test_data("jacobi")
 
 
 @pytest.mark.parametrize("input,correct_output", test_data)
-def test_wam(input, correct_output):
-    output = format_arr_to_4digits(spkm.wam_fit(input))
+def test_jacobi(input, correct_output):
+    output = format_arr_to_4digits(spkm.jacobi_fit(input))
+    # check without order!!! use http://www.math.utoledo.edu/~codenth/Linear_Algebra/Calculators/jacobi_algorithm.html
     assert (output == correct_output)

@@ -626,7 +626,7 @@ void test_off()
 }
 void test_jacobi()
 {
-    // usefull link to test - https://tiffzhang.com/jacobi/ + http://www.math.utoledo.edu/~codenth/Linear_Algebra/Calculators/jacobi_algorithm.html
+
     double my_A[3][3] = {
         {1, 2, 3},
         {2, 4, 6},
