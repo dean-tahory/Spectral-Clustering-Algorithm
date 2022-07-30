@@ -1,32 +1,22 @@
 #include "spkmeans.c"
 #include <Python.h>
-
+#include <assert.h>
 // method to convert python list of lists to 2d array in C
-static double **python_2d_array_to_c(PyObject *_list)
+double **python_matrix_to_c(PyObject *_list, int points_number, int point_dim)
 {
     PyObject *point, *point_value;
-    Py_ssize_t i, j, n, point_size;
+    Py_ssize_t i, j;
 
-    /* check if this list */
-    if (!PyList_Check(_list))
-        return NULL;
-    /* Get the size of it and build the output list */
-    n = PyList_Size(_list); /*  Same as in Python len(_list)  */
-
-    // creating the points array where each point is array of double.
-    double **points = calloc(n, sizeof(double *));
-    for (i = 0; i < n; i++)
+    double **points = calloc_2d_array(points_number, point_dim);
+    for (i = 0; i < points_number; i++)
     {
         point = PyList_GetItem(_list, i);
         if (!PyList_Check(point))
         { /* We only adding lists of points */
             continue;
         }
-        point_size = PyList_Size(point);
-        points[i] = malloc(sizeof points[i] * point_size);
-        /* Check that we got the memory from OS. In the assert - a string has a true value */
-        assert(points[i] != NULL && "Problem in python_2d_array_to_c()");
-        for (j = 0; j < point_size; j++)
+
+        for (j = 0; j < point_dim; j++)
         {
             point_value = PyList_GetItem(point, j);
             if (!PyFloat_Check(point_value))
@@ -35,8 +25,7 @@ static double **python_2d_array_to_c(PyObject *_list)
             points[i][j] = PyFloat_AS_DOUBLE(point_value); /* Convert a Python float object to double */
             if (points[i][j] == -1 && PyErr_Occurred())
             {
-                /* Flaot too big to fit in a C double, bail out */
-                free(points[i]);
+                /* Float too big to fit in a C double, bail out */
                 other_error();
             }
         }
@@ -44,24 +33,43 @@ static double **python_2d_array_to_c(PyObject *_list)
     return points;
 }
 
-// our main module API method - getting args from python object, converting them to C objects and work on them.
+double **matrix_to_not_continuous_matrix(double **matrix, int m, int n)
+{
+    double **arr = calloc(m, sizeof(double *));
+    for (int i = 0; i < m; i++)
+    {
+        arr[i] = calloc(n, sizeof(double));
+        for (int j = 0; j < n; j++)
+        {
+            *(arr[i] + j) = matrix[i][j];
+        }
+    }
+    free_2d(matrix);
+    return arr;
+}
+
+//  our main module API method - getting args from python object, converting them to C objects and work on them.
 static PyObject *kmeans_fit(PyObject *self, PyObject *args)
 {
-    int K, max_iter, points_length, point_length, i;
+    int K, max_iter, points_number, point_dim, i;
     double eps;
     PyObject *points_list, *centroids_list;
 
     // binding the variables we declared to the args we get from the python module.
-    if (!PyArg_ParseTuple(args, "iiOOiid:fit", &K, &max_iter, &points_list, &centroids_list, &points_length, &point_length, &eps))
+    if (!PyArg_ParseTuple(args, "iiOOiid:fit", &K, &max_iter, &points_list, &centroids_list, &points_number, &point_dim, &eps))
     {
         return NULL;
     }
+    /* check if pointslits is of type list */
+    if (!PyList_Check(points_list))
+        return NULL;
+    double **points = python_matrix_to_c(points_list, points_number, point_dim);
 
-    double **points = python_2d_array_to_c(points_list);
-    double **initial_centroids = python_2d_array_to_c(centroids_list);
+    // the spk function requires array of arrays where each array is allocated on its on
+    double **initial_centroids = matrix_to_not_continuous_matrix(python_matrix_to_c(centroids_list, K, point_dim), K, point_dim);
 
     // calling the kmeans C algorithm (new version that also gets initial centroids from the python module)
-    double **centroids = k_means(K, max_iter, points, initial_centroids, points_length, point_length, eps);
+    double **centroids = k_means(K, max_iter, points, initial_centroids, points_number, point_dim, eps);
 
     // converting C 2d array to Python list of lists.
     PyObject *new_centroids = PyList_New(0);
@@ -74,158 +82,203 @@ static PyObject *kmeans_fit(PyObject *self, PyObject *args)
         if (new_centroid_point == NULL)
             other_error();
         Py_ssize_t j;
-        for (j = 0; j < point_length; j++)
+        for (j = 0; j < point_dim; j++)
         {
-            PyObject *float_point = PyFloat_FromDouble(centroids[i][j]);
+            // not printing centroifs[i][j] because its not continiuous
+            PyObject *float_point = PyFloat_FromDouble(*(centroids[i] + j));
             PyList_Append(new_centroid_point, float_point);
         }
         if (PyList_Append(new_centroids, new_centroid_point) == -1)
             other_error();
     }
+
+    free_2d(points);
+    free_2d(centroids);
+
     return new_centroids;
 }
 
 static PyObject *wam_fit(PyObject *self, PyObject *args)
 {
-    int dim, i;
+    int points_number, point_dim, i, j;
     PyObject *points_list;
-
     // binding the variables we declared to the args we get from the python module.
-    if (!PyArg_ParseTuple(args, "Oi:wam_fit", &points_list, &dim))
+    if (!PyArg_ParseTuple(args, "O:wam_fit", &points_list))
     {
         return NULL;
     }
 
-    double **points = python_2d_array_to_c(points_list);
-    double **matrix = wam(points, dim);
+    /* check if pointslits is of type list */
+    if (!PyList_Check(points_list))
+        return NULL;
+    /* Get the size of it and build the output list */
+    points_number = PyList_Size(points_list); /*  Same as in Python len(_list)  */
+    point_dim = PyList_Size(PyList_GetItem(points_list, 0));
+
+    double **points = python_matrix_to_c(points_list, points_number, point_dim);
+    double **matrix = wam(points, points_number, point_dim);
 
     // converting C 2d array to Python list of lists.
     PyObject *py_matrix = PyList_New(0);
     if (py_matrix == NULL)
         other_error();
 
-    for (i = 0; i < dim; i++)
+    for (i = 0; i < points_number; i++)
     {
         PyObject *row_i = PyList_New(0);
         if (row_i == NULL)
             other_error();
-        Py_ssize_t j;
-        for (j = 0; j < dim; j++)
+        for (j = 0; j < points_number; j++)
         {
-            PyObject *float_point = PyFloat_FromDouble(matrix[i][j]);
+            PyObject *float_point = PyFloat_FromDouble((double)matrix[i][j]);
             PyList_Append(row_i, float_point);
         }
         if (PyList_Append(py_matrix, row_i) == -1)
             other_error();
     }
+
+    // free memory
+
+    free_2d(matrix);
+    free_2d(points);
     return py_matrix;
 }
 
 static PyObject *ddg_fit(PyObject *self, PyObject *args)
 {
-    int dim, i;
+    int points_number, point_dim, i, j;
     PyObject *points_list;
-
     // binding the variables we declared to the args we get from the python module.
-    if (!PyArg_ParseTuple(args, "Oi:ddg_fit", &points_list, &dim))
+    if (!PyArg_ParseTuple(args, "O:wam_fit", &points_list))
     {
         return NULL;
     }
 
-    double **points = python_2d_array_to_c(points_list);
-    double **matrix = ddg(points, dim);
+    /* check if pointslits is of type list */
+    if (!PyList_Check(points_list))
+        return NULL;
+    /* Get the size of it and build the output list */
+    points_number = PyList_Size(points_list); /*  Same as in Python len(_list)  */
+    point_dim = PyList_Size(PyList_GetItem(points_list, 0));
+
+    double **points = python_matrix_to_c(points_list, points_number, point_dim);
+    double **matrix = ddg(points, points_number, point_dim);
 
     // converting C 2d array to Python list of lists.
     PyObject *py_matrix = PyList_New(0);
     if (py_matrix == NULL)
         other_error();
 
-    for (i = 0; i < dim; i++)
+    for (i = 0; i < points_number; i++)
     {
         PyObject *row_i = PyList_New(0);
         if (row_i == NULL)
             other_error();
-        Py_ssize_t j;
-        for (j = 0; j < dim; j++)
+        for (j = 0; j < points_number; j++)
         {
-            PyObject *float_point = PyFloat_FromDouble(matrix[i][j]);
+            PyObject *float_point = PyFloat_FromDouble((double)matrix[i][j]);
             PyList_Append(row_i, float_point);
         }
         if (PyList_Append(py_matrix, row_i) == -1)
             other_error();
     }
+
+    // free memory
+
+    free_2d(matrix);
+    free_2d(points);
     return py_matrix;
 }
 
 static PyObject *lnorm_fit(PyObject *self, PyObject *args)
 {
-    int dim, i;
+    int points_number, point_dim, i, j;
     PyObject *points_list;
-
     // binding the variables we declared to the args we get from the python module.
-    if (!PyArg_ParseTuple(args, "Oi:lnorm_fit", &points_list, &dim))
+    if (!PyArg_ParseTuple(args, "O:wam_fit", &points_list))
     {
         return NULL;
     }
 
-    double **points = python_2d_array_to_c(points_list);
-    double **matrix = lnorm(points, dim);
+    /* check if pointslits is of type list */
+    if (!PyList_Check(points_list))
+        return NULL;
+    /* Get the size of it and build the output list */
+    points_number = PyList_Size(points_list); /*  Same as in Python len(_list)  */
+    point_dim = PyList_Size(PyList_GetItem(points_list, 0));
+
+    double **points = python_matrix_to_c(points_list, points_number, point_dim);
+    double **matrix = lnorm(points, points_number, point_dim);
 
     // converting C 2d array to Python list of lists.
     PyObject *py_matrix = PyList_New(0);
     if (py_matrix == NULL)
         other_error();
 
-    for (i = 0; i < dim; i++)
+    for (i = 0; i < points_number; i++)
     {
         PyObject *row_i = PyList_New(0);
         if (row_i == NULL)
             other_error();
-        Py_ssize_t j;
-        for (j = 0; j < dim; j++)
+        for (j = 0; j < points_number; j++)
         {
-            PyObject *float_point = PyFloat_FromDouble(matrix[i][j]);
+            PyObject *float_point = PyFloat_FromDouble((double)matrix[i][j]);
             PyList_Append(row_i, float_point);
         }
         if (PyList_Append(py_matrix, row_i) == -1)
             other_error();
     }
+
+    // free memory
+
+    free_2d(matrix);
+    free_2d(points);
     return py_matrix;
 }
 
 static PyObject *jacobi_fit(PyObject *self, PyObject *args)
 {
-    int dim, i;
+    int points_number, point_dim, i, j;
     PyObject *points_list;
-
     // binding the variables we declared to the args we get from the python module.
-    if (!PyArg_ParseTuple(args, "Oi:jacobi_fit", &points_list, &dim))
+    if (!PyArg_ParseTuple(args, "O:wam_fit", &points_list))
     {
         return NULL;
     }
 
-    double **points = python_2d_array_to_c(points_list);
-    double **matrix = jacobi(points, dim);
+    /* check if pointslits is of type list */
+    if (!PyList_Check(points_list))
+        return NULL;
+    /* Get the size of it and build the output list */
+    points_number = PyList_Size(points_list); /*  Same as in Python len(_list)  */
+    point_dim = PyList_Size(PyList_GetItem(points_list, 0));
+
+    double **points = python_matrix_to_c(points_list, points_number, point_dim);
+    double **matrix = jacobi(points, points_number);
 
     // converting C 2d array to Python list of lists.
     PyObject *py_matrix = PyList_New(0);
     if (py_matrix == NULL)
         other_error();
 
-    for (i = 0; i < dim + 1; i++)
+    for (i = 0; i < points_number + 1; i++)
     {
         PyObject *row_i = PyList_New(0);
         if (row_i == NULL)
             other_error();
-        Py_ssize_t j;
-        for (j = 0; j < dim; j++)
+        for (j = 0; j < points_number; j++)
         {
-            PyObject *float_point = PyFloat_FromDouble(matrix[i][j]);
+            PyObject *float_point = PyFloat_FromDouble((double)matrix[i][j]);
             PyList_Append(row_i, float_point);
         }
         if (PyList_Append(py_matrix, row_i) == -1)
             other_error();
     }
+
+    // free memory
+
+    free_2d(matrix);
+    free_2d(points);
     return py_matrix;
 }
 
@@ -248,12 +301,12 @@ static PyMethodDef _methods[] = {
 
 static struct PyModuleDef _moduledef = {
     PyModuleDef_HEAD_INIT,
-    "spkmeans",
+    "spkmeans module",
     NULL,
     -1,
     _methods};
 
-PyMODINIT_FUNC PyInit_spkmeans(void)
+PyMODINIT_FUNC PyInit_spkmeans_module(void)
 {
     return PyModule_Create(&_moduledef);
 }

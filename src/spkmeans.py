@@ -1,7 +1,8 @@
 
+from sys import exit
 import sys
 import math
-import spkmeans as spkmeans
+import spkmeans_module as spkm
 import pandas as pd
 import numpy as np
 
@@ -30,39 +31,9 @@ def print_2d_list(arr):
         print(','.join(row))
 
 
-# first step: validate command line foramt :
-if len(sys.argv) == 4:
-    if not sys.argv[1].isnumeric():
-        invalid_input()
-    K = int(sys.argv[1])
-    input_goal = sys.argv[2]
-    input_file = sys.argv[3]
-
-    if not is_valid_path(input_file):
-        invalid_input()
-else:
-    invalid_input()
-
-# second step: reading the input, checking if K < N
-try:
-    points_table = pd.read_csv(input_file, header=None, dtype=float)
-
-except FileNotFoundError:
-    other_error()
-if(K >= len(points_table.index)):
-    invalid_input()
-points = points_table.to_numpy()
-np.random.seed(0)
-
-
-# third step: k-means++ algorithm
-max_iter = 300
-eps = 0.001
-
-
 def k_means_pp(points, K):
     centroids = np.zeros((K, points.shape[1]))
-    centroids_indexes = [0]*K
+    centroids_indexes = [0] * K
     points_number = points.shape[0]
     D_values = np.zeros(points_number)
     P_values = np.zeros(points_number)
@@ -72,10 +43,10 @@ def k_means_pp(points, K):
         for l in range(points_number):
 
             distance_list = [
-                (points[l]-centroids[j]).dot((points[l]-centroids[j])) for j in range(i)]
+                (points[l] - centroids[j]).dot((points[l] - centroids[j])) for j in range(i)]
             D_values[l] = min(distance_list)
         for l in range(points_number):
-            P_values[l] = D_values[l]/sum(D_values)
+            P_values[l] = D_values[l] / sum(D_values)
         centroids_indexes[i] = np.random.choice(len(points), p=P_values)
         centroids[i] = points[centroids_indexes[i]]
     print(','.join([f'{c}' for c in centroids_indexes]))
@@ -84,32 +55,32 @@ def k_means_pp(points, K):
 
 def determine_k(matrix, dim):
     # finding the eiganvalues of the matrix with jacobi method
-    eiganvalues = spkmeans.jacobi_fit(matrix, dim)[0]
+    eiganvalues = spkm.jacobi_fit(matrix)[0]
     eiganvalues.sort(reverse=True)
     k = 0
     delta_max = 0
-    for i in range(0, math.floor(dim/2)):
-        delta = abs(eiganvalues[i]-eiganvalues[i+1])
+    for i in range(0, math.floor(dim / 2)):
+        delta = abs(eiganvalues[i] - eiganvalues[i + 1])
         if delta > delta_max:
             k = i
             delta_max = delta
-    return k+1
+    return k + 1
 
 # TEST
 
 
 def spk(points: list[float], dim: float, K: int):
     # step 1: calculate wam(points)
-    lnorm_matrix = spkmeans.lnorm_fit(points, dim)
+    lnorm_matrix = spkm.lnorm_fit(points)
     if K == 0:
         K = determine_k(lnorm_matrix, dim)
     eigvalue_to_eigvector = {}
 
     # TODO change points to lnorm_matrix
-    jacobi_mat = spkmeans.jacobi_fit(lnorm_matrix, dim)
+    jacobi_mat = spkm.jacobi_fit(lnorm_matrix)
     for i in range(dim):
         eigvalue_to_eigvector[jacobi_mat[0][i]] = np.array(
-            [jacobi_mat[j][i] for j in range(1, dim+1)])
+            [jacobi_mat[j][i] for j in range(1, dim + 1)])
     eiganvalues = jacobi_mat[0]
     eiganvalues.sort()
     U_matrix = eigvalue_to_eigvector[eiganvalues[0]]
@@ -122,28 +93,60 @@ def spk(points: list[float], dim: float, K: int):
     norm_vector = np.array([np.linalg.norm(U_matrix[i])
                            for i in range(U_matrix.shape[0])])
     for i in range(U_matrix.shape[0]):
-        V_matrix[i] = U_matrix[i]/norm_vector[i]
+        V_matrix[i] = U_matrix[i] / norm_vector[i]
     # print('\n')
     # print_2d_list(V_matrix.tolist())
-    centroids = spkmeans.kmeans_fit(K, max_iter, V_matrix.tolist(), k_means_pp(V_matrix, K).tolist(), V_matrix.shape[0], V_matrix.shape[1], eps)
+    centroids = spkm.kmeans_fit(K, max_iter, V_matrix.tolist(), k_means_pp(V_matrix, K).tolist(), V_matrix.shape[0], V_matrix.shape[1], eps)
     for c in centroids:
         for i in range(len(c)):
             c[i] = f'{c[i]:.4f}'
         print(','.join(c))
 
-    # main methods
-if(input_goal == "spk"):
-    spk(points.tolist(), points.shape[0], K)
-elif(input_goal == "wam"):
-    print_2d_list(spkmeans.wam_fit(points.tolist(),
-                                   points.shape[0]))
-elif(input_goal == "ddg"):
-    print_2d_list(spkmeans.ddg_fit(points.tolist(),
-                  points.shape[0]))
-elif(input_goal == "lnorm"):
-    print_2d_list(spkmeans.lnorm_fit(points.tolist(),
-                  points.shape[0]))
-elif(input_goal == "jacobi"):
-    print_2d_list(spkmeans.jacobi_fit(points.tolist(), points.shape[0]))
-else:
-    invalid_input()
+
+def main():
+
+    # first step: validate command line foramt :
+    if len(sys.argv) == 4:
+        if not sys.argv[1].isnumeric():
+            invalid_input()
+        K = int(sys.argv[1])
+        input_goal = sys.argv[2]
+        input_file = sys.argv[3]
+
+        if not is_valid_path(input_file):
+            invalid_input()
+    else:
+        invalid_input()
+
+    # second step: reading the input, checking if K < N
+    try:
+        points_table = pd.read_csv(input_file, header=None, dtype=float)
+
+    except FileNotFoundError:
+        other_error()
+    if(K >= len(points_table.index)):
+        invalid_input()
+    points = points_table.to_numpy()
+    np.random.seed(0)
+
+    # third step: k-means++ algorithm
+    max_iter = 300
+    eps = 0.001
+
+    if(input_goal == "spk"):
+        spk(points.tolist(), points.shape[0], K)
+    elif(input_goal == "wam"):
+        print_2d_list(spkm.wam_fit(points.tolist()))
+    elif(input_goal == "ddg"):
+        print_2d_list(spkm.ddg_fit(points.tolist()))
+    elif(input_goal == "lnorm"):
+        print_2d_list(spkm.lnorm_fit(points.tolist()))
+    elif(input_goal == "jacobi"):
+        # TODO check if we can assume that the given mateix is squared or we should check it by ourself. right now assuming that the given matrix is squared...
+        print_2d_list(spkm.jacobi_fit(points.tolist()))
+    else:
+        invalid_input()
+
+
+if __name__ == '__main__':
+    main()

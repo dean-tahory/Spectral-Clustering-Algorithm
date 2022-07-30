@@ -5,3 +5,6 @@ spkmeans.cpython-39-darwin.so
 input.txt
 *.dSYM
 checked_output.txt
+.pytest_cache
+test.ipynb
+__pycache__
