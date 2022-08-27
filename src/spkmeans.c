@@ -334,6 +334,29 @@ double **ddg(double **points, int points_number, int point_dim)
                 {
                     D_matrix[i][j] += W_matrix[i][k];
                 }
+            }
+        }
+    }
+    free_2d(W_matrix);
+    return D_matrix;
+}
+double **ddg_inverse_square(double **points, int points_number, int point_dim)
+{
+    double **W_matrix = wam(points, points_number, point_dim);
+    double **D_matrix = calloc_2d_array(points_number, points_number);
+    for (int i = 0; i < points_number; i++)
+    {
+        for (int j = 0; j < points_number; j++)
+        {
+            if (i != j)
+                D_matrix[i][j] = 0;
+            else
+            {
+                // summing the i's row of W_matrix
+                for (int k = 0; k < points_number; k++)
+                {
+                    D_matrix[i][j] += W_matrix[i][k];
+                }
                 D_matrix[i][j] = 1 / sqrt(D_matrix[i][j]);
             }
         }
@@ -344,7 +367,7 @@ double **ddg(double **points, int points_number, int point_dim)
 double **lnorm(double **points, int points_number, int point_dim)
 {
     double **W_matrix = wam(points, points_number, point_dim);
-    double **D_matrix = ddg(points, points_number, point_dim);
+    double **D_matrix = ddg_inverse_square(points, points_number, point_dim);
     double **lnorm_matrix = calloc_2d_array(points_number, points_number);
     for (int i = 0; i < points_number; i++)
     {
@@ -355,7 +378,7 @@ double **lnorm(double **points, int points_number, int point_dim)
                 lnorm_matrix[i][i] = 1 - D_matrix[i][i] * D_matrix[i][i] * W_matrix[i][i];
             }
             else
-                lnorm_matrix[i][j] = D_matrix[i][i] * D_matrix[j][j] * W_matrix[i][j];
+                lnorm_matrix[i][j] = -1 * D_matrix[i][i] * D_matrix[j][j] * W_matrix[i][j];
         }
     }
     free_2d(W_matrix);
@@ -384,6 +407,12 @@ double **jacobi(double **A, int dim)
         // step 1: find the indexes of the max (absolue) element
         int *indexes = find_max_element_off_diagonal(curr_A, dim);
         i = indexes[0], j = indexes[1];
+
+        if (curr_A[i][j] == 0)
+        {
+            next_A = curr_A;
+            break;
+        }
 
         // step 2: calculate theta -> t -> c -> s
         theta = (curr_A[j][j] - curr_A[i][i]) / (2 * curr_A[i][j]);
@@ -455,10 +484,16 @@ double **jacobi(double **A, int dim)
         for (int j = 0; j < dim && i > 0; j++)
         {
             new_V[0][j] = next_A[j][j];
+            if (V[i - 1][j] == 0)
+            {
+                V[i - 1][j] = 0;
+            }
+
             new_V[i][j] = V[i - 1][j];
         }
     }
     free_2d(V);
+    free_2d(next_A);
     return new_V;
 }
 double **k_means(int const K, int const max_iter, double **points, double **centroids, int const points_length, int const point_length, double eps)
