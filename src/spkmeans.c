@@ -4,21 +4,40 @@
 #include <stdlib.h>
 #include <string.h>
 
-// TODO remove 'test label
-const char *goal[] = {"wam", "ddg", "lnorm", "jacobi", "test"};
-// TODO move this method to test section
-void print_arr(double *arr, int length)
-{
-    for (int i = 0; i < length; i++)
-    {
-        if (i == (length - 1))
-            printf("%.4lf", arr[i]);
-        else
-            printf("%.4lf,", arr[i]);
-    }
-}
+const char *goal[] = {"wam", "ddg", "lnorm", "jacobi"};
 
 /* Auxiliary methods */
+/**
+ * @brief free memory of 2d array created by calloc_2d_array()
+ *
+ * @param arr
+ * @param length number of rows
+ */
+void free_2d(double **arr)
+{
+    free(arr[0]);
+    free(arr);
+}
+/**
+ * @brief creating continious memory block for 2d array
+ *
+ * @param rows_number number of rows
+ * @param col_number number of columns
+ * @return double** pointer to arr[0]
+ */
+double **calloc_2d_array(int rows_number, int cols_number)
+{
+    int i;
+    double *p = calloc(rows_number * cols_number, sizeof(double));
+
+    double **arr = calloc(rows_number, sizeof(double *));
+    if (p == NULL || arr == NULL)
+        other_error();
+    for (i = 0; i < rows_number; i++)
+        arr[i] = p + i * cols_number;
+    return arr;
+}
+
 void invalid_input()
 {
     printf("Invalid Input!\n");
@@ -32,7 +51,8 @@ void other_error()
 int is_valid_path(char *s)
 {
     int dot_flag = 0;
-    for (char c = *s; c != '\0'; c = *++s)
+    char c;
+    for (c = *s; c != '\0'; c = *++s)
     {
         if (c == '.')
         {
@@ -57,7 +77,8 @@ double norm(double const *u, double const *v, int dim)
 double dot_prod(double *u, double *v, int dim)
 {
     double res = 0;
-    for (int i = 0; i < dim; i++)
+    int i;
+    for (i = 0; i < dim; i++)
     {
         res += u[i] * v[i];
     }
@@ -66,39 +87,19 @@ double dot_prod(double *u, double *v, int dim)
 double *get_column_of_matrix(double **matrix, int dim, int j)
 {
     double *col = calloc(dim, sizeof(double));
-    for (int i = 0; i < dim; i++)
+    int i;
+    for (i = 0; i < dim; i++)
     {
         col[i] = matrix[i][j];
     }
 
     return col;
 }
-/**
- * @brief multiply square matrices
- *
- * @param A 2d array
- * @param B 2d array
- * @param dim  dim of the matrices
- */
-// TODO remove this method if it's not used
-double **matrix_prod(double **A, double **B, int dim)
+double dmax(double x, double y)
 {
-    double **C = calloc(dim, sizeof(double *));
-    for (int i = 0; i < dim; i++)
-    {
-        C[i] = calloc(dim, sizeof(double));
-        for (int j = 0; j < dim; j++)
-        {
-            // printf("A[%d]: ", i);
-            // print_arr(A[i], dim);
-            // printf("\nB[%d]: ", j);
-            // print_arr(get_column_of_matrix(B, dim, j), dim);
-            // printf("\n");
-            C[i][j] = dot_prod(A[i], get_column_of_matrix(B, dim, j), dim);
-            // printf("c[%d][%d]: %.4lf\n", i, j, C[i][j]);
-        }
-    }
-    return C;
+    if (x >= y)
+        return x;
+    return y;
 }
 /**
  * @brief
@@ -110,25 +111,31 @@ double **matrix_prod(double **A, double **B, int dim)
  */
 int *find_max_element_off_diagonal(double **matrix, int dim)
 {
+    double max_element;
+    int max_i, max_j, i, j;
+    int *indexes;
     if (dim == 1)
         return NULL;
-    // max_element is always positive
-    double max_element = fabs(matrix[0][dim - 1]);
-    int max_i = 0, max_j = dim - 1;
-    for (int i = 0; i < dim; i++)
+    /* max_element is always positive*/
+    max_element = fabs(matrix[0][dim - 1]);
+    max_i = 0;
+    max_j = dim - 1;
+
+    for (i = 0; i < dim; i++)
     {
-        for (int j = i; j < dim; j++)
+        for (j = i; j < dim; j++)
         {
             if (i != j)
             {
-                if (max_element != fmax(max_element, fabs(matrix[i][j])))
+
+                if (max_element != dmax(max_element, fabs(matrix[i][j])))
                 {
                     max_element = fabs(matrix[i][j]), max_i = i, max_j = j;
                 }
             }
         }
     }
-    int *indexes = calloc(2, sizeof(int));
+    indexes = calloc(2, sizeof(int));
     indexes[0] = max_i, indexes[1] = max_j;
     return indexes;
 }
@@ -155,9 +162,10 @@ double sign(double x)
 double off(double **A, int dim)
 {
     double sum = 0;
-    for (int i = 0; i < dim; i++)
+    int i, j;
+    for (i = 0; i < dim; i++)
     {
-        for (int j = 0; j < dim; j++)
+        for (j = 0; j < dim; j++)
         {
             if (i != j)
             {
@@ -176,14 +184,15 @@ double off(double **A, int dim)
  */
 void print_squared_2d_arr(double **arr, int dim)
 {
-    for (int i = 0; i < dim; i++)
+    int i, j;
+    for (i = 0; i < dim; i++)
     {
-        for (int j = 0; j < dim; j++)
+        for (j = 0; j < dim; j++)
         {
             if (j == (dim - 1))
-                printf("%.4lf", arr[i][j]);
+                printf("%.4f", arr[i][j]);
             else
-                printf("%.4lf,", arr[i][j]);
+                printf("%.4f,", arr[i][j]);
         }
         printf("\n");
     }
@@ -191,14 +200,15 @@ void print_squared_2d_arr(double **arr, int dim)
 
 void print_2d_arr(double **arr, int rows_number, int columns_number)
 {
-    for (int i = 0; i < rows_number; i++)
+    int i, j;
+    for (i = 0; i < rows_number; i++)
     {
-        for (int j = 0; j < columns_number; j++)
+        for (j = 0; j < columns_number; j++)
         {
             if (j == (columns_number - 1))
-                printf("%.4lf", arr[i][j]);
+                printf("%.4f", arr[i][j]);
             else
-                printf("%.4lf,", arr[i][j]);
+                printf("%.4f,", arr[i][j]);
         }
         printf("\n");
     }
@@ -216,91 +226,47 @@ void print_2d_arr(double **arr, int rows_number, int columns_number)
  */
 void rotation_prod(double **M, int i, int j, double c, double s, int dim)
 {
-    if (j < i) // swap, we want p,p to be the first element in the diagonal where it equals to a
+    int temp, k;
+    double *i_col, *j_col;
+    if (j < i)
     {
-        int temp = j;
+        temp = j;
         j = i;
         i = temp;
     }
 
-    double *i_col = calloc(dim, sizeof(double));
+    i_col = calloc(dim, sizeof(double));
 
-    double *j_col = calloc(dim, sizeof(double));
+    j_col = calloc(dim, sizeof(double));
 
     i_col[i] = c;
     i_col[j] = -s;
     j_col[i] = s;
     j_col[j] = c;
-
-    for (int k = 0; k < dim; k++)
+    for (k = 0; k < dim; k++)
     {
-        // M[k][i] M[k][j]
+        /* M[k][i] M[k][j]*/
         double k_i = dot_prod(M[k], i_col, dim);
         double k_j = dot_prod(M[k], j_col, dim);
         M[k][i] = k_i, M[k][j] = k_j;
     }
+    free(i_col);
+    free(j_col);
 }
-// sum the second vector v into u
+/* sum the second vector v into u */
 void points_sum(double *u, double const *v, int length)
 {
-    for (int i = 0; i < length; i++)
+    int i;
+    for (i = 0; i < length; i++)
         u[i] += v[i];
-}
-/**
- * @brief free memory of 2d array created by calloc_2d_array()
- *
- * @param arr
- * @param length number of rows
- */
-void free_2d(double **arr)
-{
-    // TODO remove rows_number paramter
-    free(arr[0]);
-    free(arr);
-}
-/**
- * @brief creating continious memory block for 2d array
- *
- * @param rows_number number of rows
- * @param col_number number of columns
- * @return double** pointer to arr[0]
- */
-double **calloc_2d_array(int rows_number, int cols_number)
-{
-    double *p = calloc(rows_number * cols_number, sizeof(double));
-
-    double **arr = calloc(rows_number, sizeof(double *));
-    if (p == NULL || arr == NULL)
-        other_error();
-    for (int i = 0; i < rows_number; i++)
-        arr[i] = p + i * cols_number;
-    return arr;
-}
-
-void check_allocation(double **arr, int row, int col)
-{
-    for (int i = 0; i < row; i++)
-    {
-        for (int j = 0; j < col; j++)
-        {
-            printf("%p\n", &arr[i][j]);
-        }
-    }
 }
 
 /* Main Methods */
 double **wam(double **points, int points_number, int point_dim)
 {
     int i, j;
-    // double points[5][2] = {
-    //     {5.7482, 3.1919},
-    //     {1.8254, 3.4804},
-    //     {10.3252, 4.9087},
-    //     {6.5068, 8.3759},
-    //     {7.2796, 6.6037}};
-    // print_2d_arr(points, 2, 3);
+
     double **W_matrix = calloc_2d_array(points_number, points_number);
-    // check_allocation(W_matrix, dim);
     for (i = 0; i < points_number; i++)
     {
         for (j = 0; j < points_number; j++)
@@ -321,16 +287,17 @@ double **ddg(double **points, int points_number, int point_dim)
 {
     double **W_matrix = wam(points, points_number, point_dim);
     double **D_matrix = calloc_2d_array(points_number, points_number);
-    for (int i = 0; i < points_number; i++)
+    int i, j, k;
+    for (i = 0; i < points_number; i++)
     {
-        for (int j = 0; j < points_number; j++)
+        for (j = 0; j < points_number; j++)
         {
             if (i != j)
                 D_matrix[i][j] = 0;
             else
             {
-                // summing the i's row of W_matrix
-                for (int k = 0; k < points_number; k++)
+                /* summing the i's row of W_matrix */
+                for (k = 0; k < points_number; k++)
                 {
                     D_matrix[i][j] += W_matrix[i][k];
                 }
@@ -344,16 +311,17 @@ double **ddg_inverse_square(double **points, int points_number, int point_dim)
 {
     double **W_matrix = wam(points, points_number, point_dim);
     double **D_matrix = calloc_2d_array(points_number, points_number);
-    for (int i = 0; i < points_number; i++)
+    int i, j, k;
+    for (i = 0; i < points_number; i++)
     {
-        for (int j = 0; j < points_number; j++)
+        for (j = 0; j < points_number; j++)
         {
             if (i != j)
                 D_matrix[i][j] = 0;
             else
             {
-                // summing the i's row of W_matrix
-                for (int k = 0; k < points_number; k++)
+                /* summing the i's row of W_matrix */
+                for (k = 0; k < points_number; k++)
                 {
                     D_matrix[i][j] += W_matrix[i][k];
                 }
@@ -369,9 +337,10 @@ double **lnorm(double **points, int points_number, int point_dim)
     double **W_matrix = wam(points, points_number, point_dim);
     double **D_matrix = ddg_inverse_square(points, points_number, point_dim);
     double **lnorm_matrix = calloc_2d_array(points_number, points_number);
-    for (int i = 0; i < points_number; i++)
+    int i, j;
+    for (i = 0; i < points_number; i++)
     {
-        for (int j = 0; j < points_number; j++)
+        for (j = 0; j < points_number; j++)
         {
             if (i == j)
             {
@@ -388,39 +357,39 @@ double **lnorm(double **points, int points_number, int point_dim)
 double **jacobi(double **A, int dim)
 {
 
-    int i, j;
+    int i, j, k, a, b, r, l;
     double theta, t, c, s;
-    double **next_A;
-    // initialize V to be unit matrix
-    double **V = calloc_2d_array(dim, dim);
-    for (int l = 0; l < dim; l++)
+    double **next_A, **V, **curr_A, **new_V;
+    /* initialize V to be unit matrix */
+    V = calloc_2d_array(dim, dim);
+    for (l = 0; l < dim; l++)
         V[l][l] = 1;
 
-    // copying A to work with
-    double **curr_A = calloc_2d_array(dim, dim);
-    for (int l = 0; l < dim; l++)
-        for (int k = 0; k < dim; k++)
+    /* copying A to work with */
+    curr_A = calloc_2d_array(dim, dim);
+    for (l = 0; l < dim; l++)
+        for (k = 0; k < dim; k++)
             curr_A[l][k] = A[l][k];
 
-    for (int k = 0; k < 100; k++)
+    for (k = 0; k < 100; k++)
     {
-        // step 1: find the indexes of the max (absolue) element
+        /* step 1: find the indexes of the max (absolue) element */
         int *indexes = find_max_element_off_diagonal(curr_A, dim);
         i = indexes[0], j = indexes[1];
-
+        free(indexes);
         if (curr_A[i][j] == 0)
         {
             next_A = curr_A;
             break;
         }
 
-        // step 2: calculate theta -> t -> c -> s
+        /* step 2: calculate theta -> t -> c -> s */
         theta = (curr_A[j][j] - curr_A[i][i]) / (2 * curr_A[i][j]);
         t = sign(theta) / (fabs(theta) + sqrt(pow(theta, 2) + 1));
         c = 1 / (sqrt(pow(t, 2) + 1));
         s = t * c;
 
-        // step 3: calculating V = product of matrix rotations
+        /* step 3: calculating V = product of matrix rotations */
         if (k == 0)
         {
             V[i][i] = V[j][j] = c;
@@ -430,31 +399,16 @@ double **jacobi(double **A, int dim)
                 V[i][j] = s, V[j][i] = -s;
         }
         else
-        {
-            /* using matrix product */
-            // double **P = calloc(dim, sizeof(double *));
-            // for (int l = 0; l < dim; l++)
-            // {
-            //     P[l] = calloc(dim, sizeof(double));
-            //     P[l][l] = 1;
-            // }
-            // P[i][i] = P[j][j] = c;
-            // if (j < i)
-            //     P[j][i] = s, P[i][j] = -s;
-            // else
-            //     P[i][j] = s, P[j][i] = -s;
-            // V = matrix_prod(V, P, dim);
-
             rotation_prod(V, i, j, c, s, dim);
-        }
 
-        // setp 4: calculating A': copying A to A' -> updating row i and column j only
+        /* setp 4: calculating A': copying A to A' -> updating row i and column j only */
         next_A = calloc_2d_array(dim, dim);
-        for (int a = 0; a < dim; a++)
-            for (int b = 0; b < dim; b++)
+
+        for (a = 0; a < dim; a++)
+            for (b = 0; b < dim; b++)
                 next_A[a][b] = curr_A[a][b];
 
-        for (int r = 0; r < dim; r++)
+        for (r = 0; r < dim; r++)
         {
             if (r != i && r != j)
             {
@@ -467,21 +421,22 @@ double **jacobi(double **A, int dim)
         next_A[j][j] = pow(s, 2) * curr_A[i][i] + pow(c, 2) * curr_A[j][j] + 2 * s * c * curr_A[i][j];
         next_A[i][j] = next_A[j][i] = 0;
 
-        // step 5: check if we reach the required convergence - 1*10^-5
-        if (off(curr_A, dim) - off(next_A, dim) <= pow(10, -5))
+        /* step 5: check if we reach the required convergence - 1*10^-5 */
+        if (off(curr_A, dim) - off(next_A, dim) <= 0.00001)
         {
+            free_2d(curr_A);
             break;
         }
-        // step 6: free memory of A and updating A to be next_A
+        /* step 6: free memory of A and updating A to be next_A */
         free_2d(curr_A);
         curr_A = next_A;
     }
 
-    // step 7: rerturn new matrix where its first row are the eiganvalues and the rest is matrix V
-    double **new_V = calloc_2d_array(dim + 1, dim);
-    for (int i = 0; i < dim + 1; i++)
+    /* step 7: return new matrix where its first row are the eiganvalues and the rest is matrix V */
+    new_V = calloc_2d_array(dim + 1, dim);
+    for (i = 0; i < dim + 1; i++)
     {
-        for (int j = 0; j < dim && i > 0; j++)
+        for (j = 0; j < dim && i > 0; j++)
         {
             new_V[0][j] = next_A[j][j];
             if (V[i - 1][j] == 0)
@@ -572,182 +527,16 @@ double **k_means(int const K, int const max_iter, double **points, double **cent
     free(diff_small);
     return centroids;
 }
-// testing methods
-void test_get_column_of_matrix()
-{
-    double my_mat[3][3] = {
-        {2, 1, 2},
-        {3, 3, 4},
-        {2, 5, 8}};
-    double **mat = calloc(3, sizeof(double *));
-    for (int i = 0; i < 3; i++)
-    {
-        mat[i] = calloc(3, sizeof(double));
-        for (int j = 0; j < 3; j++)
-        {
-            mat[i][j] = my_mat[i][j];
-        }
-    }
-    print_arr(get_column_of_matrix(mat, 3, 2), 3);
-    printf("\n");
-}
-void test_dot_prod()
-{
-}
-void test_matrix_prod()
-{
-    double my_A[3][3] = {
-        {1, 0, 0},
-        {0, 0.8112, 0.5847},
-        {0, -0.5847, 0.8112}};
-    double **A = calloc(3, sizeof(double *));
-    for (int i = 0; i < 3; i++)
-    {
-        A[i] = calloc(3, sizeof(double));
-        for (int j = 0; j < 3; j++)
-        {
-            A[i][j] = my_A[i][j];
-        }
-    }
-    double my_B[3][3] = {
-        {1, 0, 0},
-        {0, 0.8112, 0.5847},
-        {0, -0.5847, 0.8112}};
-    double **B = calloc(3, sizeof(double *));
-    for (int i = 0; i < 3; i++)
-    {
-        B[i] = calloc(3, sizeof(double));
-        for (int j = 0; j < 3; j++)
-        {
-            B[i][j] = my_B[i][j];
-        }
-    }
-    print_squared_2d_arr(matrix_prod(A, B, 3), 3);
-}
-void test_find_max_element_off_diagonal()
-{
-    double my_A[3][3] = {
-        {2, 1, -50},
-        {3, 3, 4},
-        {2, 5, 8}};
-    double **A = calloc(3, sizeof(double *));
-    for (int i = 0; i < 3; i++)
-    {
-        A[i] = calloc(3, sizeof(double));
-        for (int j = 0; j < 3; j++)
-        {
-            A[i][j] = my_A[i][j];
-        }
-    }
-    int *index = find_max_element_off_diagonal(A, 3);
-    printf("i:%d,j:%d", index[0], index[1]);
-}
-void test_off()
-{
-    double my_A[3][3] = {
-        {1, 2, -3},
-        {2, 4, 6},
-        {3, 6, 8}};
-    double **A = calloc(3, sizeof(double *));
-    for (int i = 0; i < 3; i++)
-    {
-        A[i] = calloc(3, sizeof(double));
-        for (int j = 0; j < 3; j++)
-        {
-            A[i][j] = my_A[i][j];
-        }
-    }
-    printf("%.4lf\n", off(A, 3));
-}
-void test_jacobi()
-{
 
-    double my_A[3][3] = {
-        {1, 2, 3},
-        {2, 4, 6},
-        {3, 6, 8}};
-    double **A = calloc(3, sizeof(double *));
-    for (int i = 0; i < 3; i++)
-    {
-        A[i] = calloc(3, sizeof(double));
-        for (int j = 0; j < 3; j++)
-        {
-            A[i][j] = my_A[i][j];
-        }
-    }
-    print_2d_arr(jacobi(A, 3), 4, 3);
-}
-void test_rotation_prod()
-{
-    // TODO test with higher dimension matrix
-    // double my_A[4][4] = {
-    //     {1, 2, 3, 4},
-    //     {5, 6, 7, 8},
-    //     {9, 10, 11, 12},
-    //     {13, 14, 15, 16}};
-    // double **A = calloc(4, sizeof(double *));
-    // for (int i = 0; i < 4; i++)
-    // {
-    //     A[i] = calloc(4, sizeof(double));
-    //     for (int j = 0; j < 4; j++)
-    //     {
-    //         A[i][j] = my_A[i][j];
-    //     }
-    // }
-    // double my_B[4][4] = {
-    //     {1, 0, 0, 0},
-    //     {0, 2, 0, 4},
-    //     {0, 0, 1, 0},
-    //     {0, -4, 0, 2}};
-    // double **B = calloc(4, sizeof(double *));
-    // for (int i = 0; i < 4; i++)
-    // {
-    //     B[i] = calloc(4, sizeof(double));
-    //     for (int j = 0; j < 4; j++)
-    //     {
-    //         B[i][j] = my_B[i][j];
-    //     }
-    // }
-    double my_A[3][3] = {
-        {1.0000, 0.0000, 0.0000},
-        {0.0000, 0.8112, 0.5847},
-        {0.0000, -0.5847, 0.8112}};
-    double **A = calloc(3, sizeof(double *));
-    for (int i = 0; i < 3; i++)
-    {
-        A[i] = calloc(3, sizeof(double));
-        for (int j = 0; j < 3; j++)
-        {
-            A[i][j] = my_A[i][j];
-        }
-    }
-    double my_B[3][3] = {
-        {1.0000, 0.0000, 0.0000},
-        {0.0000, 0.8112, 0.5847},
-        {0.0000, -0.5847, 0.8112}};
-    double **B = calloc(3, sizeof(double *));
-    for (int i = 0; i < 3; i++)
-    {
-        B[i] = calloc(3, sizeof(double));
-        for (int j = 0; j < 3; j++)
-        {
-            B[i][j] = my_B[i][j];
-        }
-    }
-    rotation_prod(A, 1, 2, 0.8112, 0.5847, 3);
-    print_squared_2d_arr(A, 3);
-}
-
-void test()
-{
-    test_jacobi();
-    // test_rotation_prod();
-}
 int main(int argc, char **argv)
 {
     char *input_goal;
     char *input_path;
-
+    int i, j;
+    int point_dim = 0, points_number = 0;
+    char c;
+    double **points;
+    FILE *fptr;
     if (argc != 3)
         invalid_input();
     input_goal = argv[1];
@@ -756,17 +545,13 @@ int main(int argc, char **argv)
         invalid_input();
 
     /* reading input from file */
-    FILE *fptr = fopen(input_path, "r");
+    fptr = fopen(input_path, "r");
     if (fptr == NULL)
     {
         other_error();
     }
 
-    int point_dim = 0;
-    int points_number = 0;
-    char c;
-
-    // counting point size
+    /* counting point size */
     while ((c = fgetc(fptr)) != EOF)
     {
         double point;
@@ -779,21 +564,20 @@ int main(int argc, char **argv)
         fscanf(fptr, "%lf", &point);
     }
 
-    // counting number of points
+    /* counting number of points */
     while ((c = fgetc(fptr)) != EOF)
         if (c == '\n')
             points_number++;
 
     rewind(fptr);
 
-    double **points = calloc_2d_array(points_number, point_dim);
-    // double *p = calloc(points_number * point_dim, sizeof(int));
-    // double **points = calloc(points_number, sizeof(double *));
-    //  reading the points from the file into array
-    for (int i = 0; i < points_number; i++)
+    points = calloc_2d_array(points_number, point_dim);
+
+    /*  reading the points from the file into array */
+    for (i = 0; i < points_number; i++)
     {
-        // points[i] = p + i * point_dim;
-        for (int j = 0; j < point_dim; j++)
+        /* points[i] = p + i * point_dim; */
+        for (j = 0; j < point_dim; j++)
         {
             fscanf(fptr, "%lf", &points[i][j]);
             fgetc(fptr);
@@ -821,19 +605,12 @@ int main(int argc, char **argv)
     }
     else if (!strcmp(input_goal, goal[3]))
     {
-        // we assume the input is a symmetric matrix
+        /* we assume the input is a symmetric matrix */
         double **matrix = jacobi(points, points_number);
 
         print_2d_arr(matrix, points_number + 1, points_number);
         free_2d(matrix);
     }
-
-    // TODO remove 'test' label case
-    else if (!strcmp(input_goal, goal[4]))
-    {
-        test();
-    }
-
     else
         invalid_input();
 

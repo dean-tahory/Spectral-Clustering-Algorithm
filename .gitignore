@@ -7,4 +7,13 @@ input.txt
 checked_output.txt
 .pytest_cache
 test.ipynb
+format_txt.py
+output.txt
+tester.sh
+testing.c
+testing
+test_output
+testfiles
+tmp
+final
 __pycache__

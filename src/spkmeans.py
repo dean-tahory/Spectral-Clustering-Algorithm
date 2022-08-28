@@ -53,54 +53,35 @@ def k_means_pp(points, K):
     return centroids
 
 
-def determine_k(matrix, dim):
-    # finding the eiganvalues of the matrix with jacobi method
-    eiganvalues = spkm.jacobi_fit(matrix)[0]
-    eiganvalues.sort(reverse=True)
-    k = 0
-    delta_max = 0
-    for i in range(0, math.floor(dim / 2)):
-        delta = abs(eiganvalues[i] - eiganvalues[i + 1])
-        if delta > delta_max:
-            k = i
-            delta_max = delta
-    return k + 1
-
-# TEST
-
-
-def spk(points: list[float], dim: float, K: int):
+def spk(points, K):
     # step 1: calculate wam(points)
-    lnorm_matrix = spkm.lnorm_fit(points)
-    if K == 0:
-        K = determine_k(lnorm_matrix, dim)
-    eigvalue_to_eigvector = {}
+    diagonal = spkm.jacobi_lnorm(points)
+    narr = np.array(diagonal)
+    df = pd.DataFrame(narr.T)
+    # TODO it should be ascending=False when sumbit
+    df = df.sort_values(by=[0], ascending=True).reset_index(drop=True)
 
-    # TODO change points to lnorm_matrix
-    jacobi_mat = spkm.jacobi_fit(lnorm_matrix)
-    for i in range(dim):
-        eigvalue_to_eigvector[jacobi_mat[0][i]] = np.array(
-            [jacobi_mat[j][i] for j in range(1, dim + 1)])
-    eiganvalues = jacobi_mat[0]
-    eiganvalues.sort()
-    U_matrix = eigvalue_to_eigvector[eiganvalues[0]]
-    for i in range(1, K):
-        U_matrix = np.vstack([U_matrix, eigvalue_to_eigvector[eiganvalues[i]]])
-    U_matrix = np.transpose(U_matrix)
-    # print_2d_list(U_matrix.tolist())
-    V_matrix = U_matrix
-    # TEST if V is normalized by rows
-    norm_vector = np.array([np.linalg.norm(U_matrix[i])
-                           for i in range(U_matrix.shape[0])])
-    for i in range(U_matrix.shape[0]):
-        V_matrix[i] = U_matrix[i] / norm_vector[i]
-    # print('\n')
-    # print_2d_list(V_matrix.tolist())
-    centroids = spkm.kmeans_fit(K, max_iter, V_matrix.tolist(), k_means_pp(V_matrix, K).tolist(), V_matrix.shape[0], V_matrix.shape[1], eps)
-    for c in centroids:
-        for i in range(len(c)):
-            c[i] = f'{c[i]:.4f}'
-        print(','.join(c))
+    if K == 0:
+        # determine K
+        delta_max = 0
+        for i in range(0, math.floor(len(diagonal[0]) / 2)):
+            delta = abs(df[0][i] - df[0][i + 1])
+            if delta > delta_max:
+                K = i + 1
+                delta_max = delta
+
+    # construct U - k largest eiganvectors of Lnorm in ascedning order
+    U = df.iloc[:K, :].iloc[:, 1:].to_numpy().T
+    # T is normalized U
+    for i in range(U.shape[0]):
+        norm = np.linalg.norm(U[i])
+        if norm:
+            U[i] /= norm
+        T = U
+    # calling kmeans algorithm with T
+    centroids = spkm.kmeans_fit(K, 300, T.tolist(), k_means_pp(T, K).tolist(), T.shape[0], T.shape[1], 0)
+    print_2d_list(centroids)
+    return(centroids)
 
 
 def main():
@@ -129,12 +110,8 @@ def main():
     points = points_table.to_numpy()
     np.random.seed(0)
 
-    # third step: k-means++ algorithm
-    max_iter = 300
-    eps = 0.001
-
     if(input_goal == "spk"):
-        spk(points.tolist(), points.shape[0], K)
+        spk(points.tolist(), K)
     elif(input_goal == "wam"):
         print_2d_list(spkm.wam_fit(points.tolist()))
     elif(input_goal == "ddg"):

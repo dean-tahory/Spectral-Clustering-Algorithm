@@ -1,5 +1,5 @@
-#include "spkmeans.c"
 #include <Python.h>
+#include "spkmeans.c"
 #include <assert.h>
 // method to convert python list of lists to 2d array in C
 double **python_matrix_to_c(PyObject *_list, int points_number, int point_dim)
@@ -35,11 +35,12 @@ double **python_matrix_to_c(PyObject *_list, int points_number, int point_dim)
 
 double **matrix_to_not_continuous_matrix(double **matrix, int m, int n)
 {
+    int i, j;
     double **arr = calloc(m, sizeof(double *));
-    for (int i = 0; i < m; i++)
+    for (i = 0; i < m; i++)
     {
         arr[i] = calloc(n, sizeof(double));
-        for (int j = 0; j < n; j++)
+        for (j = 0; j < n; j++)
         {
             *(arr[i] + j) = matrix[i][j];
         }
@@ -282,6 +283,54 @@ static PyObject *jacobi_fit(PyObject *self, PyObject *args)
     return py_matrix;
 }
 
+static PyObject *jacobi_lnorm(PyObject *self, PyObject *args)
+{
+    int points_number, point_dim, i, j;
+    PyObject *points_list;
+    // binding the variables we declared to the args we get from the python module.
+    if (!PyArg_ParseTuple(args, "O:wam_fit", &points_list))
+    {
+        return NULL;
+    }
+
+    /* check if pointslits is of type list */
+    if (!PyList_Check(points_list))
+        return NULL;
+    /* Get the size of it and build the output list */
+    points_number = PyList_Size(points_list); /*  Same as in Python len(_list)  */
+    point_dim = PyList_Size(PyList_GetItem(points_list, 0));
+
+    double **points = python_matrix_to_c(points_list, points_number, point_dim);
+    double **lnorm_matrix = lnorm(points, points_number, point_dim);
+    double **matrix = jacobi(lnorm_matrix, points_number);
+    free_2d(lnorm_matrix);
+
+    // converting C 2d array to Python list of lists.
+    PyObject *py_matrix = PyList_New(0);
+    if (py_matrix == NULL)
+        other_error();
+
+    for (i = 0; i < points_number + 1; i++)
+    {
+        PyObject *row_i = PyList_New(0);
+        if (row_i == NULL)
+            other_error();
+        for (j = 0; j < points_number; j++)
+        {
+            PyObject *float_point = PyFloat_FromDouble((double)matrix[i][j]);
+            PyList_Append(row_i, float_point);
+        }
+        if (PyList_Append(py_matrix, row_i) == -1)
+            other_error();
+    }
+
+    // free memory
+
+    free_2d(matrix);
+    free_2d(points);
+    return py_matrix;
+}
+
 /*
  * A macro to help us with defining the methods
  */
@@ -296,6 +345,7 @@ static PyMethodDef _methods[] = {
     FUNC(METH_VARARGS, ddg_fit, "Calculate diagonal degree matrix"),
     FUNC(METH_VARARGS, lnorm_fit, "Calculate normalized graph laplacian"),
     FUNC(METH_VARARGS, jacobi_fit, "Calculate eiganvalues and eiganvectores"),
+    FUNC(METH_VARARGS, jacobi_lnorm, "Calculate eiganvalues and eiganvectores of lnorm matrix of given points"),
     {NULL, NULL, 0, NULL} /* sentinel */
 };
 
