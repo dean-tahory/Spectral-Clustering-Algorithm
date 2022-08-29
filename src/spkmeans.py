@@ -18,13 +18,15 @@ def other_error():
 
 
 def is_valid_path(path):
+    """Function to check if the given path is valid - ending with .txt or .csv"""
     if len(path.split('.')) == 2:
-        if path.split('.')[1] == 'txt':
+        if path.split('.')[1] == 'txt' or path.split('.')[1] == 'csv':
             return True
     return False
 
 
 def print_2d_list(arr):
+    """Simple function to print 2d array"""
     for row in arr:
         for i in range(len(row)):
             row[i] = f'{row[i]:.4f}'
@@ -32,6 +34,7 @@ def print_2d_list(arr):
 
 
 def k_means_pp(points, K):
+    """Function whiche calculate and return the list of inital centroids for Kmeans algorithm"""
     centroids = np.zeros((K, points.shape[1]))
     centroids_indexes = [0] * K
     points_number = points.shape[0]
@@ -54,12 +57,12 @@ def k_means_pp(points, K):
 
 
 def spk(points, K):
+    """Spectral clustering algorithm. it prints the centroids"""
     # step 1: calculate wam(points)
     diagonal = spkm.jacobi_lnorm(points)
     narr = np.array(diagonal)
     df = pd.DataFrame(narr.T)
-    # TODO it should be ascending=False when sumbit
-    df = df.sort_values(by=[0], ascending=True).reset_index(drop=True)
+    df = df.sort_values(by=[0], ascending=False).reset_index(drop=True)
 
     if K == 0:
         # determine K
@@ -75,7 +78,7 @@ def spk(points, K):
     # T is normalized U
     for i in range(U.shape[0]):
         norm = np.linalg.norm(U[i])
-        if norm:
+        if norm:  # checking if the norm isn't 0
             U[i] /= norm
         T = U
     # calling kmeans algorithm with T
@@ -119,7 +122,6 @@ def main():
     elif(input_goal == "lnorm"):
         print_2d_list(spkm.lnorm_fit(points.tolist()))
     elif(input_goal == "jacobi"):
-        # TODO check if we can assume that the given mateix is squared or we should check it by ourself. right now assuming that the given matrix is squared...
         print_2d_list(spkm.jacobi_fit(points.tolist()))
     else:
         invalid_input()

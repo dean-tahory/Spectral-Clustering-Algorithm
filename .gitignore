@@ -14,6 +14,14 @@ testing.c
 testing
 test_output
 testfiles
+new_testfiles
+old_testfiles
 tmp
 final
 __pycache__
+jacobi_input_10_6.csv
+1000_blobs_10_feat.csv
+valgrind-python.supp
+make1000blob.py
+new_tester.sh
+old_tester.sh

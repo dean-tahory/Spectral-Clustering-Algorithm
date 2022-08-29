@@ -1,8 +1,4 @@
 #include "spkmeans.h"
-#include <stdio.h>
-#include <math.h>
-#include <stdlib.h>
-#include <string.h>
 
 const char *goal[] = {"wam", "ddg", "lnorm", "jacobi"};
 
@@ -37,7 +33,10 @@ double **calloc_2d_array(int rows_number, int cols_number)
         arr[i] = p + i * cols_number;
     return arr;
 }
-
+/**
+ * @brief prints "Invalid Input!"
+ *
+ */
 void invalid_input()
 {
     printf("Invalid Input!\n");
@@ -48,24 +47,36 @@ void other_error()
     printf("An Error Has Occurred\n");
     exit(0);
 }
+/**
+ * @brief function to check if the path is valid - ending with .txt or .csv
+ *
+ * @param s the path to check
+ * @return int 1 - valid, 0 - not valid
+ */
 int is_valid_path(char *s)
 {
-    int dot_flag = 0;
     char c;
     for (c = *s; c != '\0'; c = *++s)
     {
         if (c == '.')
         {
-            dot_flag = 1;
-            if (strcmp(++s, "txt") != 0)
-                return 0;
+            s++;
+            if (strcmp(s, "txt") == 0 || strcmp(s, "csv") == 0)
+                return 1;
+            break;
         }
     }
-    if (!dot_flag)
-        return 0;
-    return 1;
+    return 0;
 }
-double norm(double const *u, double const *v, int dim)
+/**
+ * @brief calculating the norm of the subtraction of two vectors: ||u-v||
+ *
+ * @param u - array of double
+ * @param v - array of double
+ * @param dim - dimension of the both arrays
+ * @return double - ||u-v||
+ */
+double subtract_norm(double const *u, double const *v, int dim)
 {
     double d = 0;
     int i;
@@ -74,6 +85,14 @@ double norm(double const *u, double const *v, int dim)
 
     return sqrt(d);
 }
+/**
+ * @brief calculating the dot product of vector u with vector v
+ *
+ * @param u array of double
+ * @param v array of double
+ * @param dim
+ * @return double
+ */
 double dot_prod(double *u, double *v, int dim)
 {
     double res = 0;
@@ -84,10 +103,20 @@ double dot_prod(double *u, double *v, int dim)
     }
     return res;
 }
+/**
+ * @brief Get column j of matrix object as double array
+ *
+ * @param matrix
+ * @param dim
+ * @param j
+ * @return double*
+ */
 double *get_column_of_matrix(double **matrix, int dim, int j)
 {
     double *col = calloc(dim, sizeof(double));
     int i;
+    if (col == NULL)
+        other_error();
     for (i = 0; i < dim; i++)
     {
         col[i] = matrix[i][j];
@@ -95,6 +124,13 @@ double *get_column_of_matrix(double **matrix, int dim, int j)
 
     return col;
 }
+/**
+ * @brief max function between double numbers
+ *
+ * @param x
+ * @param y
+ * @return double - max(x,y)
+ */
 double dmax(double x, double y)
 {
     if (x >= y)
@@ -136,6 +172,8 @@ int *find_max_element_off_diagonal(double **matrix, int dim)
         }
     }
     indexes = calloc(2, sizeof(int));
+    if (indexes == NULL)
+        other_error();
     indexes[0] = max_i, indexes[1] = max_j;
     return indexes;
 }
@@ -197,7 +235,13 @@ void print_squared_2d_arr(double **arr, int dim)
         printf("\n");
     }
 }
-
+/**
+ * @brief prints 2d array
+ *
+ * @param arr
+ * @param rows_number
+ * @param columns_number
+ */
 void print_2d_arr(double **arr, int rows_number, int columns_number)
 {
     int i, j;
@@ -238,7 +282,8 @@ void rotation_prod(double **M, int i, int j, double c, double s, int dim)
     i_col = calloc(dim, sizeof(double));
 
     j_col = calloc(dim, sizeof(double));
-
+    if (j_col == NULL || i_col == NULL)
+        other_error();
     i_col[i] = c;
     i_col[j] = -s;
     j_col[i] = s;
@@ -253,7 +298,13 @@ void rotation_prod(double **M, int i, int j, double c, double s, int dim)
     free(i_col);
     free(j_col);
 }
-/* sum the second vector v into u */
+/**
+ * @brief summarize vector v (the second) to vector u (the first)
+ *
+ * @param u first vector
+ * @param v second vector to be added to u
+ * @param length
+ */
 void points_sum(double *u, double const *v, int length)
 {
     int i;
@@ -275,7 +326,7 @@ double **wam(double **points, int points_number, int point_dim)
                 W_matrix[i][j] = 0;
             else
             {
-                double calc_norm = norm(points[i], points[j], point_dim);
+                double calc_norm = subtract_norm(points[i], points[j], point_dim);
                 W_matrix[i][j] = exp(-0.5 * calc_norm);
             }
         }
@@ -466,6 +517,9 @@ double **k_means(int const K, int const max_iter, double **points, double **cent
 
     points_to_centroids = calloc(points_length, sizeof(int));
     diff_small = calloc(K, sizeof(int));
+    if (diff_small == NULL || points_to_centroids == NULL)
+        other_error();
+
     for (i = 0; i < K; i++)
     {
         diff_small[i] = 1;
@@ -478,7 +532,7 @@ double **k_means(int const K, int const max_iter, double **points, double **cent
             new_centroids_index = points_to_centroids[i];
             for (j = 0; j < K; j++)
             {
-                if (norm(points[i], centroids[j], point_length) < norm(points[i], centroids[new_centroids_index], point_length))
+                if (subtract_norm(points[i], centroids[j], point_length) < subtract_norm(points[i], centroids[new_centroids_index], point_length))
                 {
                     new_centroids_index = j;
                 }
@@ -490,6 +544,8 @@ double **k_means(int const K, int const max_iter, double **points, double **cent
         {
             diff_small[i] = 0;
             avg_centroid = calloc(point_length, sizeof(double));
+            if (avg_centroid == NULL)
+                other_error();
             counter = 0;
             for (j = 0; j < points_length; j++)
             {
@@ -505,7 +561,7 @@ double **k_means(int const K, int const max_iter, double **points, double **cent
                 for (k = 0; k < point_length; k++)
                     avg_centroid[k] = avg_centroid[k] / counter;
 
-                if (norm(centroids[i], avg_centroid, point_length) < eps)
+                if (subtract_norm(centroids[i], avg_centroid, point_length) < eps)
                 {
                     diff_small[i] = 1;
                 }

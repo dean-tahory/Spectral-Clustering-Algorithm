@@ -1,5 +1,5 @@
 #include <Python.h>
-#include "spkmeans.c"
+#include "spkmeans.h"
 #include <assert.h>
 // method to convert python list of lists to 2d array in C
 double **python_matrix_to_c(PyObject *_list, int points_number, int point_dim)
@@ -32,14 +32,25 @@ double **python_matrix_to_c(PyObject *_list, int points_number, int point_dim)
     }
     return points;
 }
-
+/**
+ * @brief conveting continuous memory matrix to not continuous - array of points to continuous arrays
+ *
+ * @param matrix
+ * @param m
+ * @param n
+ * @return double**
+ */
 double **matrix_to_not_continuous_matrix(double **matrix, int m, int n)
 {
     int i, j;
     double **arr = calloc(m, sizeof(double *));
+    if (arr == NULL)
+        other_error();
     for (i = 0; i < m; i++)
     {
         arr[i] = calloc(n, sizeof(double));
+        if (arr[i] == NULL)
+            other_error();
         for (j = 0; j < n; j++)
         {
             *(arr[i] + j) = matrix[i][j];
@@ -85,7 +96,6 @@ static PyObject *kmeans_fit(PyObject *self, PyObject *args)
         Py_ssize_t j;
         for (j = 0; j < point_dim; j++)
         {
-            // not printing centroifs[i][j] because its not continiuous
             PyObject *float_point = PyFloat_FromDouble(*(centroids[i] + j));
             PyList_Append(new_centroid_point, float_point);
         }
@@ -94,7 +104,13 @@ static PyObject *kmeans_fit(PyObject *self, PyObject *args)
     }
 
     free_2d(points);
-    free_2d(centroids);
+
+    // centroids isn't continuous, so we free each row. we don't need to free initial_centroids because centroids use its memory blocks
+    for (i = 0; i < K; i++)
+    {
+        free(centroids[i]);
+    }
+    free(centroids);
 
     return new_centroids;
 }
@@ -360,21 +376,3 @@ PyMODINIT_FUNC PyInit_spkmeans_module(void)
 {
     return PyModule_Create(&_moduledef);
 }
-
-// static PyMethodDef _methods[] = {
-//     FUNC(METH_VARARGS, fit, "K-means-algorithm"),
-//     {NULL, NULL, 0, NULL} /* sint ientinel */
-// };
-
-// static struct PyModuleDef _moduledef = {
-//     PyModuleDef_HEAD_INIT,
-//     "mykmeanssp",
-//     NULL,
-//     -1,
-//     _methods};
-
-// PyMODINIT_FUNC
-// PyInit_mykmeanssp(void)
-// {
-//     return PyModule_Create(&_moduledef);
-// }
