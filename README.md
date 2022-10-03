@@ -2,15 +2,15 @@
 
 ## Overview
 
-As part of my Software Project course at Tel Aviv University, I've been asked to implement the normalized version of spectral clustering algorithm using c and export it as a python extension module.
+As part of my Software Project course at Tel Aviv University, I've been asked to implement the normalized version of spectral clustering algorithm using c and export it as a CPython extension module which can be imported and used from within python.
 
 ## Normalized Spectral Clustering
 
-This is the Normalized Spectral Clustering algorithm based on [[1,2]](https://github.com/dean-tahory/Spectral-Clustering-Algorithm/new/main?readme=1#references). Given a set of $n$ points $X = x_1,x_2,...x_N\in R^d$ the algorithm is:
+This is the Normalized Spectral Clustering algorithm based on [[1,2]](https://github.com/dean-tahory/Spectral-Clustering-Algorithm#references). Given a set of $n$ points $X = x_1,x_2,...x_N\in R^d$ the algorithm is:
 
 1. Form the weighted adjacency matrix $W$ from $X$
 2. Compute the normalized graph Laplacian $L_{norm}$
-3. If given $k$ is equal to $0$ we determine it using the [eigangape heuristic]()
+3. If given $k$ is equal to $0$ we determine it using the [eigangape heuristic](https://github.com/dean-tahory/Spectral-Clustering-Algorithm#the-eigengap-heuristic)
    and obtain the largest $k$ eiganvalues $u_1,...u_k$ of $L_{norm}$
 4. let $U\in R^{n\times k}$ be the matrix containing the vectors $u_1,...u_k$ as columns
 5. Form the matrix $T\in R^{n\times k}$ from $U$ by renormalizing each of $U$'s rows to have unit length, that is set $t_{ij}= \frac{u_{ij}}{(\sum_j{u_{ij}^2})^{\frac{1}{2}}}$
